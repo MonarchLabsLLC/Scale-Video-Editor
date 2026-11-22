@@ -1,0 +1,773 @@
+/* Scale Video Editor: the window. Plain DOM, no framework, so anyone can read and change it. */
+'use strict';
+
+const api = window.sve;
+const FORMATS = window.SVE_FORMATS || [];
+const CATS = window.SVE_CATEGORIES || [];
+const TICKS = 254016000000;
+
+const state = {
+  env: null,
+  projects: [],
+  fc: null,
+  route: { view: 'home' },
+  cat: 'all',
+  chats: {},          // projectId -> messages
+  busy: new Set(),    // projectIds with a running turn
+  attachments: {},    // context key -> [paths]
+  drafts: {},         // context key -> text
+  files: {},          // projectId -> files
+  selected: {},       // projectId -> selected file path
+  previewMode: {},    // projectId -> 'exports' | 'filmcraft'
+  seq: null,
+  frame: null,
+  frameBusy: false
+};
+
+/* ---------- small helpers ---------- */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'html') el.innerHTML = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const basename = p => String(p).split(/[\\/]/).pop();
+
+function toast(msg, ms = 3200) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.add('hidden'), ms);
+}
+
+function ago(ms) {
+  const s = Math.max(1, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return 'now';
+  const m = Math.round(s / 60); if (m < 60) return m + 'm';
+  const hr = Math.round(m / 60); if (hr < 24) return hr + 'h';
+  return Math.round(hr / 24) + 'd';
+}
+
+function tc(sec) {
+  sec = Math.max(0, sec || 0);
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60), f = Math.floor((sec % 1) * 30);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(f).padStart(2, '0')}`;
+}
+
+// Small, safe Markdown: code blocks, inline code, bold, italics, headings, lists, links.
+function md(src) {
+  const blocks = String(src || '').split(/```/);
+  let out = '';
+  blocks.forEach((b, i) => {
+    if (i % 2 === 1) { out += `<pre>${esc(b.replace(/^[a-z]*\n/, ''))}</pre>`; return; }
+    const lines = b.split('\n');
+    let list = null, para = [];
+    const flush = () => { if (para.length) { out += `<p>${inline(para.join(' '))}</p>`; para = []; } };
+    const close = () => { if (list) { out += `</${list}>`; list = null; } };
+    for (const line of lines) {
+      const ul = line.match(/^\s*[-*]\s+(.*)/), ol = line.match(/^\s*\d+[.)]\s+(.*)/), hd = line.match(/^(#{1,4})\s+(.*)/);
+      if (ul || ol) {
+        flush();
+        const want = ul ? 'ul' : 'ol';
+        if (list !== want) { close(); out += `<${want}>`; list = want; }
+        out += `<li>${inline((ul || ol)[1])}</li>`;
+      } else if (hd) { flush(); close(); out += `<h4>${inline(hd[2])}</h4>`; }
+      else if (!line.trim()) { flush(); close(); }
+      else { close(); para.push(line); }
+    }
+    flush(); close();
+  });
+  return out;
+}
+function inline(s) {
+  return esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" data-ext="1">$1</a>');
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-ext]');
+  if (a) { e.preventDefault(); api.os.openExternal(a.getAttribute('href')); }
+});
+
+function pastelFor(format) {
+  const cat = CATS.find(c => c.id === (format.cats || [])[0]);
+  return cat ? cat.pastel : 'cream';
+}
+
+function agentInfo(id) {
+  return (state.env?.agents || []).find(a => a.id === id) || { id, name: id, installed: false };
+}
+
+/* ---------- data ---------- */
+async function refreshEnv() {
+  state.env = await api.env();
+  renderSidebar();
+}
+async function refreshProjects() {
+  state.projects = await api.projects.list();
+  renderSidebar();
+}
+async function refreshFc() {
+  try { state.fc = await api.filmcraft.status(); } catch { state.fc = null; }
+  renderSidebar();
+}
+
+/* ---------- navigation ---------- */
+function go(route) {
+  state.route = route;
+  render();
+}
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-nav]');
+  if (!n) return;
+  e.preventDefault();
+  const v = n.getAttribute('data-nav');
+  if (v === 'new') return newBlankProject();
+  go({ view: v });
+});
+
+function render() {
+  renderSidebar();
+  const main = $('#main');
+  main.innerHTML = '';
+  const v = state.route.view;
+  if (v === 'project') main.append(viewProject(state.route.id));
+  else if (v === 'formats') main.append(viewFormats());
+  else if (v === 'settings') main.append(viewSettings());
+  else if (v === 'filmcraft') main.append(viewFilmcraft());
+  else main.append(viewHome());
+}
+
+/* ---------- sidebar ---------- */
+function renderSidebar() {
+  document.querySelectorAll('.nav-item[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === state.route.view));
+  const list = $('#projectList');
+  list.innerHTML = '';
+  if (!state.projects.length) list.append(h('div', { class: 'side-empty' }, 'No projects yet.'));
+  for (const p of state.projects.slice(0, 40)) {
+    const on = state.route.view === 'project' && state.route.id === p.id;
+    list.append(h('button', { class: 'project-item' + (on ? ' active' : ''), onclick: () => go({ view: 'project', id: p.id }) },
+      h('span', { class: 'name' }, p.name),
+      state.busy.has(p.id) ? h('span', { class: 'busy', title: 'Working' }) : h('span', { class: 'age' }, ago(p.updated))
+    ));
+  }
+  const fcEl = $('#fcStatus');
+  const fc = state.fc;
+  fcEl.className = 'status-row ' + (!fc ? '' : fc.bridge ? 'ok' : fc.installed ? 'warn' : 'bad');
+  fcEl.querySelector('.sub').textContent = !fc ? '…' : fc.bridge ? 'connected' : fc.installed ? (fc.updateAvailable ? 'update' : 'not connected') : 'not installed';
+  const agEl = $('#agentStatus');
+  const eng = state.env?.settings?.engine || 'claude';
+  const ai = agentInfo(eng);
+  agEl.className = 'status-row ' + (!state.env ? '' : ai.installed ? 'ok' : 'bad');
+  agEl.querySelector('.txt').textContent = ai.name || 'Agent';
+  agEl.querySelector('.sub').textContent = !state.env ? '…' : ai.installed ? (ai.version || 'ready') : 'not installed';
+}
+
+/* ---------- agent picker ---------- */
+function agentPicker({ value, onChange, up = true }) {
+  const wrap = h('div', { class: 'agent-pick' });
+  const cur = agentInfo(value);
+  const btn = h('button', { class: 'mini-select', type: 'button', title: 'Choose the agent' },
+    h('span', { class: 'agent-logo ' + cur.id }, cur.id === 'claude' ? 'C' : 'X'),
+    h('span', null, cur.name), h('span', { style: { opacity: .5 } }, '▾'));
+  wrap.append(btn);
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = wrap.querySelector('.menu');
+    if (open) { open.remove(); return; }
+    const menu = h('div', { class: 'menu' + (up ? '' : ' down') });
+    for (const a of state.env?.agents || []) {
+      menu.append(h('button', {
+        class: 'menu-item', type: 'button',
+        onclick: ev => {
+          ev.stopPropagation();
+          menu.remove();
+          if (!a.installed) { go({ view: 'settings' }); toast(`${a.name} is not installed. The Settings page shows how to install it.`); return; }
+          onChange(a.id);
+        }
+      },
+        h('span', { class: 'agent-logo ' + a.id }, a.id === 'claude' ? 'C' : 'X'),
+        h('span', null, h('div', { class: 'mi-name' }, a.name), h('div', { class: 'mi-sub' }, a.installed ? `${a.vendor} · ${a.version || 'installed'}` : 'Not installed')),
+        a.id === value ? h('span', { class: 'mi-check' }, '✓') : null));
+    }
+    menu.append(h('div', { class: 'menu-sep' }), h('button', { class: 'menu-item', type: 'button', onclick: () => go({ view: 'settings' }) },
+      h('span', { class: 'mi-sub' }, 'Agent settings…')));
+    wrap.append(menu);
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  });
+  return wrap;
+}
+
+/* ---------- composer (home and project) ---------- */
+function composer({ key, placeholder, onSubmit, big, busy, onStop, footLeft }) {
+  const atts = state.attachments[key] || (state.attachments[key] = []);
+  const ta = h('textarea', { placeholder, rows: big ? 4 : 2 });
+  ta.value = state.drafts[key] || '';
+  const attList = h('div', { class: 'attach-list' });
+  const drawAtts = () => {
+    attList.innerHTML = '';
+    attList.classList.toggle('hidden', !atts.length);
+    atts.forEach((p, i) => attList.append(h('span', { class: 'pill', title: p }, basename(p),
+      h('button', { class: 'x', type: 'button', onclick: () => { atts.splice(i, 1); drawAtts(); } }, '×'))));
+  };
+  drawAtts();
+  const sendBtn = h('button', { class: 'send' + (busy ? ' stop' : ''), type: 'button', title: busy ? 'Stop' : 'Send' }, busy ? '■' : '↑');
+  const submit = () => {
+    if (busy) { onStop && onStop(); return; }
+    const text = ta.value.trim();
+    if (!text) { ta.focus(); return; }
+    const files = atts.slice();
+    state.drafts[key] = '';
+    atts.length = 0;
+    onSubmit(text, files);
+  };
+  sendBtn.addEventListener('click', submit);
+  ta.addEventListener('input', () => {
+    state.drafts[key] = ta.value;
+    if (!big) { ta.style.height = 'auto'; ta.style.height = Math.min(240, ta.scrollHeight) + 'px'; }
+  });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
+  });
+  const addBtn = h('button', { class: 'btn small ghost', type: 'button', onclick: async () => { const ps = await api.os.pickFiles(); ps.forEach(p => atts.includes(p) || atts.push(p)); drawAtts(); } }, '＋ Add files');
+  const box = h('div', { class: 'composer' }, attList, ta,
+    h('div', { class: 'composer-row' }, addBtn, footLeft || null, h('span', { class: 'grow' }), sendBtn));
+  box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('drop'); });
+  box.addEventListener('dragleave', () => box.classList.remove('drop'));
+  box.addEventListener('drop', e => {
+    e.preventDefault(); box.classList.remove('drop');
+    for (const f of e.dataTransfer.files) { const p = api.os.pathForFile(f); if (p && !atts.includes(p)) atts.push(p); }
+    drawAtts();
+  });
+  setTimeout(() => ta.focus(), 0);
+  return box;
+}
+
+/* ---------- home ---------- */
+function setupBanner() {
+  const env = state.env;
+  if (!env) return null;
+  const anyAgent = env.agents.some(a => a.installed);
+  if (!anyAgent) {
+    return h('div', { class: 'banner' }, h('div', { class: 'grow' }, h('strong', null, 'Connect an agent to start.'),
+      h('p', null, 'Scale Video Editor runs your own Claude Code or Codex. Neither is installed on this computer yet.')),
+      h('button', { class: 'btn', onclick: () => go({ view: 'settings' }) }, 'Set up an agent'));
+  }
+  if (state.fc && !state.fc.installed) {
+    return h('div', { class: 'banner' }, h('div', { class: 'grow' }, h('strong', null, 'Install FilmCraft for the timeline.'),
+      h('p', null, 'FilmCraft is the free, open-source editor the agent uses to cut your video. Chat works without it.')),
+      h('button', { class: 'btn', onclick: () => go({ view: 'filmcraft' }) }, 'Get FilmCraft'));
+  }
+  return null;
+}
+
+function viewHome() {
+  const engine = state.env?.settings?.engine || 'claude';
+  let chosen = engine;
+  const picker = agentPicker({ value: chosen, onChange: async id => { chosen = id; state.env.settings = await api.setSettings({ engine: id }); render(); } });
+  const page = h('div', { class: 'page' },
+    h('div', { class: 'topdrag' }),
+    setupBanner(),
+    h('span', { class: 'eyebrow' }, 'Scale Video Editor'),
+    h('h1', { class: 'hero', html: 'Make <em>something.</em>' }),
+    h('p', { class: 'lede' }, 'Describe the video. Your agent makes it while you watch, and FilmCraft holds the timeline.'),
+    composer({
+      key: 'home', big: true, footLeft: picker,
+      placeholder: 'Describe your video, or pick a format below. Drop footage, a script or a screenshot here.',
+      onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, prompt: text, attachments: files })
+    }),
+    formatSection(8),
+    recentSection()
+  );
+  return page;
+}
+
+function nameFrom(text) {
+  const words = text.replace(/[^\p{L}\p{N}\s'-]/gu, ' ').split(/\s+/).filter(Boolean).slice(0, 5).join(' ');
+  return words || 'Untitled';
+}
+
+function formatSection(limit) {
+  const tabs = h('div', { class: 'tabs' },
+    h('button', { class: 'tab' + (state.cat === 'all' ? ' on' : ''), onclick: () => { state.cat = 'all'; render(); } }, 'All'),
+    CATS.map(c => h('button', { class: 'tab' + (state.cat === c.id ? ' on' : ''), onclick: () => { state.cat = c.id; render(); } }, c.name)));
+  const list = FORMATS.filter(f => state.cat === 'all' || (f.cats || []).includes(state.cat));
+  const shown = limit ? list.slice(0, limit) : list;
+  const cat = CATS.find(c => c.id === state.cat);
+  return h('section', null,
+    h('div', { class: 'section-head' },
+      h('div', null, h('span', { class: 'eyebrow' }, 'Formats'), h('h2', { class: 'section', style: { marginTop: '8px' } }, cat ? cat.head : 'Pick one. Answer a few questions. Go.')),
+      limit && list.length > limit ? h('button', { class: 'btn small', onclick: () => go({ view: 'formats' }) }, `All ${list.length} formats →`) : null),
+    h('div', { style: { margin: '0 0 16px' } }, tabs),
+    h('div', { class: 'formats' }, shown.map(formatCard)));
+}
+
+function formatCard(f) {
+  return h('button', { class: 'fcard p-' + pastelFor(f), onclick: () => openInterview(f) },
+    h('div', { class: 'frame', html: window.SVE_ART(f.art) }),
+    h('div', { class: 'fshape' }, f.shape),
+    h('div', { class: 'ftitle' }, f.name),
+    h('div', { class: 'fblurb' }, f.blurb));
+}
+
+function recentSection() {
+  if (!state.projects.length) return null;
+  return h('section', null,
+    h('div', { class: 'section-head' }, h('div', null, h('span', { class: 'eyebrow' }, 'Your projects'), h('h2', { class: 'section', style: { marginTop: '8px' } }, 'Pick up where you left off.'))),
+    h('div', { class: 'pgrid' }, state.projects.slice(0, 8).map(p => h('button', { class: 'pcard', onclick: () => go({ view: 'project', id: p.id }) },
+      h('div', { class: 'thumb' }, p.thumb ? h('img', { src: api.mediaUrl(p.thumb), alt: '' }) : h('img', { class: 'ph', src: 'assets/scale-mark.svg', alt: '' })),
+      h('div', { class: 'meta' }, h('div', { class: 'pname' }, p.name), h('div', { class: 'pwhen' }, `${agentInfo(p.engine).name} · edited ${ago(p.updated)} ago`))))));
+}
+
+function viewFormats() {
+  return h('div', { class: 'page' }, h('div', { class: 'topdrag' }),
+    h('span', { class: 'eyebrow' }, 'Formats'),
+    h('h1', { class: 'hero' }, `${FORMATS.length} kinds of video.`),
+    h('p', { class: 'lede' }, 'Each one asks you a few questions, then hands your agent a complete brief. Or click Fast prompt to let the agent choose.'),
+    formatSection(0));
+}
+
+/* ---------- interview ---------- */
+function openInterview(f) {
+  const qs = window.SVEBrief.parse(f.brief);
+  const answers = {};
+  let engine = state.env?.settings?.engine || 'claude';
+  const overlay = $('#overlay');
+  const preview = h('pre');
+  const update = () => { preview.textContent = window.SVEBrief.fill(f.brief, qs, answers); };
+  const body = h('div', { class: 'sheet-body' });
+  for (const q of qs) {
+    const required = q.type === 'long' || q.type === 'file';
+    const label = h('label', { class: 'ql' }, q.label, required ? h('span', { class: 'req' }, 'needed') : null);
+    let input;
+    if (q.type === 'choice') {
+      input = h('div', { class: 'opts' }, q.options.map(o => {
+        const b = h('button', { class: 'opt', type: 'button' }, o);
+        b.addEventListener('click', () => {
+          const on = answers[q.id] === o;
+          answers[q.id] = on ? '' : o;
+          b.parentElement.querySelectorAll('.opt').forEach(x => x.classList.remove('on'));
+          if (!on) b.classList.add('on');
+          update();
+        });
+        return b;
+      }));
+    } else if (q.type === 'long') {
+      input = h('textarea', { placeholder: q.hint.replace(/^paste\s*/i, 'Paste ').replace(/^./, c => c.toUpperCase()), oninput: e => { answers[q.id] = e.target.value; update(); } });
+    } else if (q.type === 'file') {
+      const fname = h('span', { class: 'fname' }, 'No file chosen');
+      input = h('div', { class: 'filepick' }, h('button', {
+        class: 'btn small', type: 'button', onclick: async () => {
+          const ps = await api.os.pickFiles();
+          if (ps[0]) { answers[q.id] = ps.join(', '); fname.textContent = ps.map(basename).join(', '); update(); }
+        }
+      }, 'Choose file…'), fname);
+    } else {
+      input = h('input', { type: 'text', placeholder: q.hint, oninput: e => { answers[q.id] = e.target.value; update(); } });
+    }
+    body.append(h('div', { class: 'q' }, label, input));
+  }
+  body.append(h('details', { class: 'prompt-preview' }, h('summary', null, 'See the prompt your agent gets'), preview));
+  update();
+
+  const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; };
+  const launch = fast => {
+    const miss = window.SVEBrief.missing(qs, answers);
+    if (miss.length) { toast(`Please fill in: ${miss.map(m => m.label).join(', ')}`); return; }
+    const prompt = window.SVEBrief.fill(f.brief, qs, answers);
+    close();
+    startProject({ name: f.name, engine, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
+  };
+  let picker;
+  const onPick = id => { engine = id; const next = agentPicker({ value: id, onChange: onPick }); picker.replaceWith(next); picker = next; };
+  picker = agentPicker({ value: engine, onChange: onPick });
+  const sheet = h('div', { class: 'sheet', role: 'dialog' },
+    h('div', { class: 'sheet-top' },
+      h('div', { class: 'frame p-' + pastelFor(f), html: window.SVE_ART(f.art) }),
+      h('div', null, h('span', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
+      h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
+    body,
+    h('div', { class: 'sheet-foot' }, picker, h('span', { class: 'grow' }),
+      h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
+      h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →')));
+  overlay.innerHTML = '';
+  overlay.append(sheet);
+  overlay.classList.remove('hidden');
+  overlay.onclick = e => { if (e.target === overlay) close(); };
+  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+}
+
+/* ---------- projects ---------- */
+async function newBlankProject() {
+  const engine = state.env?.settings?.engine || 'claude';
+  const p = await api.projects.create({ name: 'Untitled', engine });
+  await refreshProjects();
+  go({ view: 'project', id: p.id });
+}
+
+async function startProject({ name, engine, format, prompt, attachments }) {
+  if (!agentInfo(engine).installed) { go({ view: 'settings' }); toast(`${agentInfo(engine).name} is not installed yet.`); return; }
+  const p = await api.projects.create({ name, engine, format });
+  await refreshProjects();
+  go({ view: 'project', id: p.id });
+  await sendTurn(p.id, prompt, attachments || []);
+}
+
+async function sendTurn(id, text, attachments) {
+  const chat = state.chats[id] || (state.chats[id] = []);
+  chat.push({ role: 'user', text, attachments });
+  state.busy.add(id);
+  if (state.route.view === 'project' && state.route.id === id) render(); else renderSidebar();
+  try {
+    await api.agent.send({ projectId: id, prompt: text, attachments });
+  } catch (err) {
+    state.busy.delete(id);
+    chat.push({ role: 'agent', kind: 'done', ok: false, error: String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '') });
+    render();
+  }
+}
+
+api.agent.onEvent(({ projectId, event }) => {
+  const chat = state.chats[projectId] || (state.chats[projectId] = []);
+  if (event.kind === 'session') return;
+  if (event.kind === 'tool-result') {
+    for (let i = chat.length - 1; i >= 0; i--) {
+      if (chat[i].kind === 'tool' && chat[i].ok === undefined) { chat[i].ok = event.ok; break; }
+    }
+    scheduleFilesRefresh(projectId);
+  } else {
+    chat.push({ role: 'agent', ...event });
+  }
+  if (event.kind === 'done') {
+    state.busy.delete(projectId);
+    refreshProjects();
+    loadFiles(projectId, true);
+  }
+  if (state.route.view === 'project' && state.route.id === projectId) {
+    if (event.kind === 'done') render(); else drawChat(projectId);
+  } else renderSidebar();
+});
+
+const filesTimers = {};
+function scheduleFilesRefresh(id) {
+  clearTimeout(filesTimers[id]);
+  filesTimers[id] = setTimeout(() => loadFiles(id, true), 1500);
+}
+
+async function loadFiles(id, autoselect) {
+  const before = new Set((state.files[id] || []).map(f => f.path));
+  try { state.files[id] = await api.projects.files(id); } catch { return; }
+  const fresh = state.files[id].find(f => f.folder === 'exports' && !before.has(f.path) && /\.(mp4|mov|m4v|webm|png|jpe?g|gif|webp)$/i.test(f.path));
+  if (autoselect && fresh) { state.selected[id] = fresh.path; state.previewMode[id] = 'exports'; }
+  if (state.route.view === 'project' && state.route.id === id) drawPreview(id);
+}
+
+/* ---------- project workspace ---------- */
+function viewProject(id) {
+  const project = state.projects.find(p => p.id === id);
+  if (!project) { setTimeout(() => go({ view: 'home' }), 0); return h('div'); }
+  if (!state.chats[id]) {
+    api.projects.chat(id).then(msgs => { state.chats[id] = msgs.filter(m => m.kind !== 'session'); drawChat(id); });
+  }
+  if (!state.files[id]) loadFiles(id, false);
+  const busy = state.busy.has(id);
+  const title = h('div', { class: 'ptitle', contenteditable: 'true', spellcheck: 'false' }, project.name);
+  title.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); title.blur(); } });
+  title.addEventListener('blur', async () => {
+    const name = title.textContent.trim();
+    if (!name || name === project.name) { title.textContent = project.name; return; }
+    try {
+      const np = await api.projects.rename(id, name);
+      for (const m of ['chats', 'files', 'selected', 'previewMode']) { if (state[m][id]) { state[m][np.id] = state[m][id]; delete state[m][id]; } }
+      if (busy) state.busy.add(np.id);
+      await refreshProjects();
+      go({ view: 'project', id: np.id });
+    } catch (err) { toast(String(err.message || err).replace(/^Error invoking[^:]+: (Error: )?/, '')); title.textContent = project.name; }
+  });
+  const picker = agentPicker({
+    value: project.engine, onChange: async eng => {
+      if (eng === project.engine) return;
+      await api.projects.update(id, { engine: eng });
+      await refreshProjects();
+      toast(`${agentInfo(eng).name} starts a new conversation. It can still see every file in the project.`);
+      render();
+    }
+  });
+  const left = h('section', { class: 'ws-left' },
+    h('div', { class: 'ws-head' },
+      h('button', { class: 'crumb', onclick: () => go({ view: 'home' }) }, 'Home /'), title, h('span', { class: 'grow' }),
+      h('button', { class: 'btn small ghost', title: 'Show the project folder', onclick: () => api.os.openPath(project.dir) }, 'Folder'),
+      h('button', {
+        class: 'btn small ghost', title: 'Start a new conversation in this project', disabled: busy, onclick: async () => {
+          await api.projects.newChat(id); state.chats[id].push({ role: 'agent', kind: 'notice', text: 'New conversation. The agent starts fresh but can still see every file in the project.' }); drawChat(id);
+        }
+      }, 'New chat')),
+    h('div', { class: 'chat', id: 'chat' }),
+    h('div', { class: 'ws-compose' }, composer({
+      key: 'p:' + id, busy,
+      placeholder: busy ? 'The agent is working…' : 'Ask for a change, or say what to make next.',
+      onSubmit: (text, files) => sendTurn(id, text, files),
+      onStop: () => api.agent.stop(id),
+      footLeft: picker
+    })));
+  const right = h('section', { class: 'ws-right', id: 'preview' });
+  const ws = h('div', { class: 'ws' }, left, right);
+  setTimeout(() => { drawChat(id); drawPreview(id); }, 0);
+  return ws;
+}
+
+function drawChat(id) {
+  const el = $('#chat');
+  if (!el || state.route.id !== id) return;
+  const chat = state.chats[id] || [];
+  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  el.innerHTML = '';
+  if (!chat.length) {
+    el.append(h('div', { class: 'chat-empty' },
+      h('span', { class: 'eyebrow' }, 'New project'),
+      h('h3', null, 'What are we making?'),
+      h('p', null, 'Tell the agent what you want. Add footage, a script or screenshots with the + button, or drop them on the box below.'),
+      h('div', { class: 'suggest' }, FORMATS.slice(0, 4).map(f => h('button', { onclick: () => openInterview(f) }, `${f.name}: “${f.ask}”`)))));
+    return;
+  }
+  let group = null;
+  const flushGroup = () => {
+    if (!group) return;
+    const items = group;
+    group = null;
+    const box = h('div', { class: 'tools-group' });
+    const show = items.length > 4 ? items.slice(-3) : items;
+    if (items.length > 4) {
+      const more = h('button', { class: 'tools-more' }, `+ ${items.length - 3} earlier steps`);
+      more.addEventListener('click', () => { box.innerHTML = ''; items.forEach(t => box.append(toolRow(t))); });
+      box.append(more);
+    }
+    show.forEach(t => box.append(toolRow(t)));
+    el.append(box);
+  };
+  let lastText = null;
+  for (const m of chat) {
+    if (m.kind === 'tool') { (group || (group = [])).push(m); continue; }
+    flushGroup();
+    if (m.kind === 'done' && !m.ok && m.error && m.error === lastText) {
+      // Claude Code repeats its last message as the error; show it once, with the fix.
+      el.lastChild && el.lastChild.remove();
+    }
+    lastText = m.kind === 'text' ? m.text : null;
+    if (m.role === 'user') {
+      el.append(h('div', { class: 'msg user' }, m.text, m.attachments && m.attachments.length ? h('div', { class: 'att' }, m.attachments.map(basename).join(' · ')) : null));
+    } else if (m.kind === 'text') {
+      el.append(h('div', { class: 'msg agent', html: md(m.text) }));
+    } else if (m.kind === 'thinking') {
+      el.append(h('div', { class: 'msg thinking' }, m.text.length > 280 ? m.text.slice(0, 279) + '…' : m.text));
+    } else if (m.kind === 'notice') {
+      el.append(h('div', { class: 'notice' }, m.text));
+    } else if (m.kind === 'done' && !m.ok) {
+      el.append(h('div', { class: 'err' }, m.error || 'The agent stopped.', signInHint(m.error)));
+    }
+  }
+  flushGroup();
+  if (state.busy.has(id)) el.append(h('div', { class: 'working' }, h('span', { class: 'spin' }), `${agentInfo((state.projects.find(p => p.id === id) || {}).engine).name} is working…`));
+  if (atBottom || state.busy.has(id)) el.scrollTop = el.scrollHeight;
+}
+
+function signInHint(error) {
+  if (!/not logged in|\/login|log in|sign in|authenticat|unauthori[sz]ed|401/i.test(error || '')) return null;
+  return h('div', { style: { marginTop: '8px' } },
+    'Sign in once in a terminal: run ', h('code', null, 'claude'), ' and type ', h('code', null, '/login'),
+    ' for Claude Code, or run ', h('code', null, 'codex login'), ' for Codex. Then send your message again.');
+}
+
+function toolRow(t) {
+  const name = String(t.name || '').replace(/^mcp__filmcraft__/, 'FilmCraft · ').replace(/^filmcraft\./, 'FilmCraft · ');
+  return h('div', { class: 'tool' + (t.ok === false ? ' fail' : ''), title: t.detail || '' }, h('span', { class: 'tn' }, name), h('span', { class: 'td' }, t.detail || ''));
+}
+
+/* ---------- preview ---------- */
+function drawPreview(id) {
+  const el = $('#preview');
+  if (!el || state.route.id !== id) return;
+  const mode = state.previewMode[id] || 'exports';
+  const files = state.files[id] || [];
+  const fc = state.fc || {};
+  el.innerHTML = '';
+  const seg = h('div', { class: 'seg' },
+    h('button', { class: mode === 'exports' ? 'on' : '', onclick: () => { state.previewMode[id] = 'exports'; drawPreview(id); } }, 'Files'),
+    h('button', { class: mode === 'filmcraft' ? 'on' : '', onclick: () => { state.previewMode[id] = 'filmcraft'; drawPreview(id); loadSequence(id); } }, 'FilmCraft timeline'));
+  const fcBtn = fc.bridge
+    ? h('span', { class: 'pill' }, h('span', { style: { width: '8px', height: '8px', borderRadius: '50%', background: 'var(--ok)' } }), 'FilmCraft connected')
+    : h('button', { class: 'btn small', onclick: () => connectFilmcraft(id) }, fc.installed ? 'Connect FilmCraft' : 'Get FilmCraft');
+  el.append(h('div', { class: 'pv-head' }, seg, h('span', { class: 'grow' }), fcBtn));
+
+  if (mode === 'filmcraft') { drawTimelinePreview(el, id); return; }
+
+  const sel = files.find(f => f.path === state.selected[id]) || files.find(f => f.folder === 'exports' && /\.(mp4|mov|m4v|webm)$/i.test(f.path)) || files.find(f => /\.(mp4|mov|m4v|webm|png|jpe?g|gif|webp)$/i.test(f.path));
+  const stage = h('div', { class: 'stage' });
+  if (!sel) {
+    stage.append(h('div', { class: 'empty' }, h('span', { class: 'eyebrow' }, 'Preview'), h('h3', null, 'Your video shows up here.'),
+      h('p', null, 'When the agent exports a video, a still or captions to the project’s exports folder, it plays here. Media you add shows here too.')));
+  } else if (/\.(mp4|mov|m4v|webm)$/i.test(sel.path)) {
+    stage.append(h('video', { src: api.mediaUrl(sel.path) + '?v=' + Math.round(sel.mtime), controls: true, preload: 'metadata' }), h('span', { class: 'badge' }, sel.folder));
+  } else if (/\.(png|jpe?g|gif|webp)$/i.test(sel.path)) {
+    stage.append(h('img', { src: api.mediaUrl(sel.path) + '?v=' + Math.round(sel.mtime), alt: '' }), h('span', { class: 'badge' }, sel.folder));
+  } else if (sel.ext === '.fcproj') {
+    stage.append(h('div', { class: 'empty' }, h('span', { class: 'eyebrow' }, 'FilmCraft project'), h('h3', null, basename(sel.path)),
+      h('p', null, 'Open it in FilmCraft to see and edit the timeline.'), h('button', { class: 'btn coral', onclick: () => connectFilmcraft(id, sel.path) }, 'Open in FilmCraft')));
+  } else {
+    stage.append(h('div', { class: 'empty' }, h('span', { class: 'eyebrow' }, sel.ext.slice(1)), h('h3', null, basename(sel.path)),
+      h('button', { class: 'btn', onclick: () => api.os.reveal(sel.path) }, 'Show in folder')));
+  }
+  el.append(stage);
+  const strip = h('div', { class: 'strip' });
+  if (!files.length) strip.append(h('div', { class: 'strip-empty' }, 'No files yet. Exports, media and work files appear here.'));
+  for (const f of files.slice(0, 60)) {
+    const isVid = /\.(mp4|mov|m4v|webm)$/i.test(f.path), isImg = /\.(png|jpe?g|gif|webp)$/i.test(f.path);
+    const thumb = h('div', { class: 'cthumb' },
+      isImg ? h('img', { src: api.mediaUrl(f.path) + '?v=' + Math.round(f.mtime), alt: '', loading: 'lazy' })
+        : isVid ? h('video', { src: api.mediaUrl(f.path) + '#t=0.5', preload: 'metadata', muted: true })
+          : f.ext.slice(1).toUpperCase());
+    strip.append(h('button', {
+      class: 'chip' + (sel && f.path === sel.path ? ' on' : ''), title: f.rel,
+      onclick: () => { state.selected[id] = f.path; drawPreview(id); },
+      ondblclick: () => api.os.reveal(f.path)
+    }, thumb, h('div', { class: 'cname' }, basename(f.path)), h('div', { class: 'cfold' }, f.folder)));
+  }
+  el.append(strip);
+}
+
+async function connectFilmcraft(id, projectFile) {
+  const fc = state.fc || {};
+  if (!fc.installed) { go({ view: 'filmcraft' }); return; }
+  toast('Starting FilmCraft…');
+  const r = await api.filmcraft.connect(projectFile || null);
+  await refreshFc();
+  if (!r.ok) toast(r.reason, 6000); else toast(r.already ? 'FilmCraft is connected.' : 'FilmCraft is open and connected.');
+  if (id) { state.previewMode[id] = 'filmcraft'; drawPreview(id); loadSequence(id); }
+}
+
+async function loadSequence(id) {
+  if (!state.fc?.bridge) return;
+  state.seq = await api.filmcraft.sequence();
+  if (state.route.id === id && (state.previewMode[id] === 'filmcraft')) {
+    drawPreview(id);
+    if (state.seq) renderFrame(id, (state.seq.playhead || 0) / TICKS);
+  }
+}
+
+async function renderFrame(id, seconds) {
+  if (state.frameBusy) { state.pendingFrame = seconds; return; }
+  state.frameBusy = true;
+  const r = await api.filmcraft.frame(seconds);
+  state.frameBusy = false;
+  state.frame = r.ok ? { file: r.file, seconds } : { error: r.reason, seconds };
+  if (state.route.id === id && state.previewMode[id] === 'filmcraft') drawPreview(id);
+  if (state.pendingFrame != null) { const s = state.pendingFrame; state.pendingFrame = null; renderFrame(id, s); }
+}
+
+function drawTimelinePreview(el, id) {
+  const fc = state.fc || {};
+  const stage = h('div', { class: 'stage' });
+  if (!fc.bridge) {
+    stage.append(h('div', { class: 'empty' }, h('span', { class: 'eyebrow' }, 'FilmCraft'), h('h3', null, fc.installed ? 'Connect FilmCraft to see the timeline.' : 'FilmCraft is not installed.'),
+      h('p', null, 'FilmCraft opens in its own window, beside this one. The agent edits it, and the Program frame shows here.'),
+      h('button', { class: 'btn coral', onclick: () => connectFilmcraft(id) }, fc.installed ? 'Connect FilmCraft' : 'Get FilmCraft')));
+    el.append(stage);
+    return;
+  }
+  const seq = state.seq;
+  if (state.frame && state.frame.file) stage.append(h('img', { src: api.mediaUrl(state.frame.file), alt: 'Program frame' }));
+  else stage.append(h('div', { class: 'empty' }, h('span', { class: 'eyebrow' }, 'Program'),
+    h('h3', null, seq ? 'Rendering the frame…' : 'No sequence is open.'),
+    h('p', null, state.frame && state.frame.error ? state.frame.error : 'Ask the agent to build the edit. The frame at the playhead shows here.')));
+  if (seq) stage.append(h('span', { class: 'badge' }, seq.name || 'Sequence'));
+  el.append(stage);
+  const dur = seq ? (seq.duration || 0) / TICKS : 0;
+  const cur = state.frame ? state.frame.seconds : 0;
+  const label = h('span', { class: 'tc' }, `${tc(cur)} / ${tc(dur)}`);
+  const range = h('input', { type: 'range', min: 0, max: Math.max(dur, 0.01), step: 1 / 30, value: cur, disabled: !seq });
+  let t;
+  range.addEventListener('input', () => { label.textContent = `${tc(+range.value)} / ${tc(dur)}`; clearTimeout(t); t = setTimeout(() => renderFrame(id, +range.value), 180); });
+  el.append(h('div', { class: 'scrub' }, range, label, h('button', { class: 'btn small', onclick: () => loadSequence(id) }, 'Refresh')));
+  el.append(h('div', { class: 'strip' }, h('div', { class: 'strip-empty' }, 'This is FilmCraft’s Program monitor at the slider position. Edit in the FilmCraft window, or ask the agent.')));
+}
+
+/* ---------- settings ---------- */
+function viewSettings() {
+  const env = state.env || { agents: [], settings: {} };
+  const s = env.settings;
+  const set = async patch => { state.env.settings = await api.setSettings(patch); render(); };
+  const segOf = (key, opts) => h('div', { class: 'seg' }, opts.map(([v, l]) => h('button', { class: s[key] === v ? 'on' : '', onclick: () => set({ [key]: v }) }, l)));
+  return h('div', { class: 'page', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
+    h('span', { class: 'eyebrow' }, 'Settings'),
+    h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'Your agent, your keys.'),
+    h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use, signed in with your own plan.'),
+    h('div', { class: 'section-head', style: { marginTop: '8px' } }, h('h2', { class: 'section' }, 'Agents')),
+    h('div', { class: 'agent-rows' }, env.agents.map(a => h('div', { class: 'agent-row' },
+      h('span', { class: 'agent-logo ' + a.id }, a.id === 'claude' ? 'C' : 'X'),
+      h('div', { class: 'grow' }, h('div', { style: { fontWeight: 600 } }, a.name, ' ', h('span', { style: { color: 'var(--label)', fontWeight: 400 } }, a.installed ? `· ${a.version || 'installed'}` : '· not installed')),
+        a.installed ? h('div', { class: 'fh', style: { fontSize: '12px', color: 'var(--label)' } }, 'Sign in once in a terminal with ', h('code', null, a.id === 'claude' ? 'claude' : 'codex login'), ' if you have not already.')
+          : h('div', { style: { fontSize: '13px', marginTop: '4px' } }, 'Install in a terminal: ', h('code', null, a.installHint))),
+      s.engine === a.id ? h('span', { class: 'pill on' }, 'Default') : h('button', { class: 'btn small', disabled: !a.installed, onclick: () => set({ engine: a.id }) }, 'Make default')))),
+    h('div', { style: { marginTop: '10px' } }, h('button', { class: 'btn small ghost', onclick: async () => { await refreshEnv(); render(); toast('Checked again.'); } }, 'Check again')),
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Access')),
+    h('div', { class: 'field' }, segOf('access', [['standard', 'Standard'], ['full', 'Full access']]),
+      h('div', { class: 'fh' }, s.access === 'full'
+        ? 'Full access: the agent runs any command without asking, with no sandbox. Use it only on a computer you trust with this.'
+        : 'Standard: the agent edits files and runs commands in the project, and uses FilmCraft. Codex runs in its workspace sandbox with network on. Claude Code runs with a fixed list of allowed tools.')),
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Scale Video Toolkit')),
+    h('div', { class: 'field' }, h('div', null, env.toolkitDir ? `Installed at ${env.toolkitDir}. The agent reads its CLAUDE.md for which tool fits each kind of video.` : 'Not found in your home folder. The agent works without it, with fewer specialist tools.')),
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Projects folder')),
+    h('div', { class: 'field' }, h('div', null, env.projectsRoot), h('div', { class: 'fh' }, 'Each project is a normal folder with media, work and exports inside.')),
+    h('p', { style: { color: 'var(--label)', marginTop: '40px', fontSize: '12px' } }, `Scale Video Editor ${env.version || ''} · open source · FilmCraft is a separate Apache-2.0 project by storytold.`));
+}
+
+function viewFilmcraft() {
+  const fc = state.fc || {};
+  return h('div', { class: 'page', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
+    h('span', { class: 'eyebrow' }, 'FilmCraft'),
+    h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'The timeline under the chat.'),
+    h('p', { class: 'lede' }, 'FilmCraft is a free, open-source video editor. The agent drives it through its MCP server, and you can edit in its window at any time. The editor never changes FilmCraft itself.'),
+    h('div', { class: 'fc-card' },
+      h('div', { class: 'row' }, h('strong', null, fc.installed ? (fc.bridge ? 'Connected' : 'Installed, not connected') : 'Not installed')),
+      h('div', { class: 'kv' }, `Installed: ${fc.cliVersion || (fc.app ? 'app only' : '—')}   ·   Latest: ${fc.latest || 'unknown'}   ·   Control port: ${fc.port || '—'}`),
+      fc.updateAvailable ? h('p', null, `FilmCraft ${fc.latest} is out. Quit FilmCraft, install the new version of the app and its CLI together, then connect again. Keep the two on the same version.`) : null,
+      fc.installed && !fc.cli ? h('p', null, 'The FilmCraft app is here, but its command-line tool (filmcraft-cli) is not. The agent needs it. Install it from the same release page.') : null,
+      fc.appRunningWithoutBridge ? h('p', null, 'FilmCraft is open without its control bridge. Save your work and quit FilmCraft, then click Connect.') : null,
+      h('div', { class: 'row' },
+        fc.installed ? h('button', { class: 'btn coral', onclick: () => connectFilmcraft(null) }, fc.bridge ? 'Connected' : 'Connect FilmCraft') : null,
+        h('button', { class: 'btn', onclick: () => api.os.openExternal(fc.releasesPage || 'https://github.com/storytold/filmcraft/releases/latest') }, fc.installed ? 'Release page' : 'Download FilmCraft'),
+        h('button', { class: 'btn ghost', style: { color: 'var(--on-navy)' }, onclick: async () => { await refreshFc(); render(); toast('Checked again.'); } }, 'Check again'))));
+}
+
+/* ---------- start ---------- */
+window.__sve = { go, openInterview, state };
+(async function init() {
+  await Promise.all([refreshEnv(), refreshProjects()]);
+  const running = await api.agent.running();
+  running.forEach(id => state.busy.add(id));
+  render();
+  refreshFc().then(() => { if (['home', 'filmcraft'].includes(state.route.view) || state.route.view === 'project') render(); });
+  setInterval(async () => {
+    const before = JSON.stringify([state.fc?.bridge, state.fc?.installed]);
+    await refreshFc();
+    if (before !== JSON.stringify([state.fc?.bridge, state.fc?.installed]) && state.route.view !== 'home') render();
+  }, 15000);
+})();

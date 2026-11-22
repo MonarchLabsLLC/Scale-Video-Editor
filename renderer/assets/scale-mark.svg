@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Scale.gg</title>
+  <g transform="rotate(-4 32 32)">
+    <rect x="5" y="5" width="25" height="25" rx="4" fill="#ff6f61"/>
+    <rect x="34" y="5" width="25" height="25" rx="4" fill="#c5b0f4"/>
+    <rect x="5" y="34" width="25" height="25" rx="4" fill="#dceeb1"/>
+    <rect x="34" y="34" width="25" height="25" rx="4" fill="#1f1d3d" stroke="#a7a6b6" stroke-width="1.5"/>
+  </g>
+</svg>

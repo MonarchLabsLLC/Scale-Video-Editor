@@ -1,0 +1,284 @@
+// Video formats and their fill-in briefs, from the Scale Video Toolkit site.
+// Each [blank] in a brief becomes one interview question before the prompt goes to the agent.
+// Options inside a blank are split on " / "; a blank that starts with "paste" is a long answer.
+window.SVE_CATEGORIES = [
+  {
+    "id": "marketing",
+    "name": "Marketing",
+    "pastel": "peach",
+    "head": "Videos that sell.",
+    "sub": "Sales letters, demo commercials, launch films and product shots."
+  },
+  {
+    "id": "social",
+    "name": "Social media",
+    "pastel": "lilac",
+    "head": "Made for the feed.",
+    "sub": "Reels, Shorts, clips, and you on camera without filming."
+  },
+  {
+    "id": "animation",
+    "name": "Animation",
+    "pastel": "lime",
+    "head": "Drawn in code.",
+    "sub": "Cartoons, 3D worlds, stick figures and motion graphics. No stock footage."
+  },
+  {
+    "id": "explainers",
+    "name": "Explainers",
+    "pastel": "mint",
+    "head": "Make it make sense.",
+    "sub": "Narrated explainers where the picture lands on the word that names it."
+  },
+  {
+    "id": "viral",
+    "name": "Viral",
+    "pastel": "yellow",
+    "head": "Worth a second look.",
+    "sub": "No tool can promise a video will travel. These are the formats built to stop a thumb."
+  },
+  {
+    "id": "studio",
+    "name": "Editing studio",
+    "pastel": "cream",
+    "head": "The edit bay.",
+    "sub": "Voice, captions, cuts, sound and export. The jobs behind every video here, and usable on their own."
+  }
+];
+
+window.SVE_FORMATS = [
+  {
+    "id": "vsl",
+    "name": "Video sales letter",
+    "art": "timeline",
+    "cats": [
+      "marketing"
+    ],
+    "shape": "16:9 · 9:16",
+    "blurb": "A narrated sales video. Your cloned voice reads the script, the graphics show the real thing each line names, and you appear on screen for part of it.",
+    "give": "A script",
+    "get": "An MP4, a caption file, in either shape or both",
+    "ask": "Make a sales video from this script. Use my voice, and put me on screen for the opening and the close.",
+    "brief": "Make a video sales letter from the script below.\nVoice: my cloned voice.\nMusic: [yes / no]\nSound effects on the beat: [yes / no]\nShape: [16:9 / 9:16 / both]\nText on screen: [low / medium / high / you decide]\nPut me on screen for: [the opening, the close, about 15 to 20 percent in all]\nWhenever the script names a brand, an app or a number, show the real logo, the real screen or a chart.\n\nScript:\n[paste your script]"
+  },
+  {
+    "id": "demo",
+    "name": "Product demo commercial",
+    "art": "browser",
+    "cats": [
+      "marketing",
+      "explainers"
+    ],
+    "shape": "2 to 3 min",
+    "blurb": "A narrated, scored commercial that walks through a real app. Every claim is traced to a feature that exists, and it ends on one clear ask.",
+    "give": "The app, running, and its code",
+    "get": "An MP4, a caption file, and an editable timeline for Premiere or Final Cut",
+    "ask": "Make a product demo video for this app. Show the three features people use most.",
+    "brief": "Make a product demo commercial for [product name], about two to three minutes.\nThe app's code is in: [folder]\nThe app is running at: [address], and I am signed in.\nFeatures to show, in order: [feature 1, feature 2, feature 3]\nThe one thing the viewer should do at the end: [call to action]\nUse real screens from the app, and check that no customer data is showing.\nMake one pilot for me to approve before anything else."
+  },
+  {
+    "id": "promo",
+    "name": "Launch or promo film",
+    "art": "film",
+    "cats": [
+      "marketing",
+      "social"
+    ],
+    "shape": "15 to 60 s",
+    "blurb": "A short film for a launch or an announcement, cut to music that is composed for it.",
+    "give": "The product and the one thing to say",
+    "get": "An MP4 with its own score",
+    "ask": "Make a 30-second launch film for the new dashboard, with its own music.",
+    "brief": "Make a [15 / 30 / 60]-second launch film for [product or announcement].\nThe one thing it has to say: [message]\nMood: [calm and premium / fast and loud / playful]\nCompose music for it and cut the film to the music.\nEnd on: [the product name / a date / a call to action]\nShape: [16:9 / 9:16]"
+  },
+  {
+    "id": "shot",
+    "name": "3D product shot",
+    "art": "device",
+    "cats": [
+      "marketing",
+      "animation"
+    ],
+    "shape": "7 to 15 s",
+    "blurb": "A phone or a product filmed like a flagship launch: dark studio, strip lights, a slow camera move. Drawn entirely in code.",
+    "give": "What the product is and what the screen should show",
+    "get": "A short 3D clip with sound",
+    "ask": "Make a 10-second 3D hero shot of a phone showing our booking screen.",
+    "brief": "Make a 3D product shot with the 3D Style Atlas.\nStyle: [Device Hero for a phone or app / Studio Product for a physical product]\nThe product: [what it is]\nOn the screen or the label: [what it should show]\nLength: [7 to 15] seconds, with sound.\nShow me the storyboard before you build it."
+  },
+  {
+    "id": "short",
+    "name": "Reel or Short from a recording",
+    "art": "short",
+    "cats": [
+      "social",
+      "viral",
+      "studio"
+    ],
+    "shape": "9:16",
+    "blurb": "Record once. The kit cuts the take, adds graphics and delivers a vertical video ready for Reels, Shorts or TikTok.",
+    "give": "A recording of you talking",
+    "get": "A vertical MP4",
+    "ask": "Turn this recording into a 45-second Short with a strong first three seconds.",
+    "brief": "Turn this recording into a Short.\nRecording: [file]\nLength: [30 / 45 / 60] seconds, vertical.\nThe hook, in the first three seconds: [the line, or \"pick the strongest line\"]\nCaptions on screen: [yes / no]\nSound effects: [yes / no]"
+  },
+  {
+    "id": "clips",
+    "name": "Clips from a long recording",
+    "art": "cuts",
+    "cats": [
+      "social",
+      "studio"
+    ],
+    "shape": "Any",
+    "blurb": "Silences, mistakes and retakes come out of a long recording, and the best moments come out as clips.",
+    "give": "A long recording",
+    "get": "A clean cut and a set of clips",
+    "ask": "Cut the silences and mistakes out of this webinar and give me the five best one-minute clips.",
+    "brief": "Clean up this recording and pull clips from it.\nRecording: [file]\nCut out: silences, mistakes and retakes.\nThen give me [5] clips of about [60] seconds each, on these topics if they come up: [topics]\nShape for the clips: [16:9 / 9:16]"
+  },
+  {
+    "id": "talk",
+    "name": "Talking head with graphics",
+    "art": "lower",
+    "cats": [
+      "social",
+      "marketing",
+      "studio"
+    ],
+    "shape": "16:9 · 9:16",
+    "blurb": "Your talk, packaged like a produced show: a name plate when you introduce yourself, the number as you say it, the key phrase in bold.",
+    "give": "A recording of you to camera",
+    "get": "The finished video, or the graphics alone on a clear background for your editor",
+    "ask": "Add a name plate, number cards and key phrases to this talking-head video.",
+    "brief": "Package this talking-head video with graphics.\nRecording: [file]\nName plate: [name] · [one-line role]\nPick three to six moments: any number that matters as a number card, the key claim in bold, a card at each turn.\nKeep every graphic off my face.\nDeliver: [the finished video / only the graphics on a clear background, for my editor]"
+  },
+  {
+    "id": "clone",
+    "name": "You on camera, without filming",
+    "art": "clone",
+    "cats": [
+      "social",
+      "viral",
+      "marketing"
+    ],
+    "shape": "16:9 · 9:16",
+    "blurb": "A short reference clip of you and your cloned voice become a presenter who says any script, full screen or in a corner.",
+    "give": "A script and 90 seconds of you on camera, recorded once",
+    "get": "Lip-synced clips of you",
+    "ask": "Make a 20-second clip of me saying this line to camera.",
+    "brief": "Make a clip of me on camera saying the lines below, without filming.\nLook: [eye contact, talking to the viewer / looking at my screen, walking through something]\nLayout: [full screen / a corner of the frame / me on one side with graphics on the other]\nShape: [16:9 / 9:16]\nUse my cloned voice and keep the audio exactly as it is.\n\nLines:\n[paste]"
+  },
+  {
+    "id": "cartoon",
+    "name": "Animated short",
+    "art": "cartoon",
+    "cats": [
+      "animation",
+      "viral",
+      "social"
+    ],
+    "shape": "30 s to 5 min",
+    "blurb": "A cartoon with a character and a story, drawn in code in one of ten styles, with a score written for it. Silent, babbling, or with spoken dialogue.",
+    "give": "An idea, or answers to a short interview",
+    "get": "An MP4",
+    "ask": "Make a one-minute animation about a robot who learns to surf.",
+    "brief": "Make an animated short.\nLength: [30 seconds / 1 minute / 3 minutes / 5 minutes]\nThe story: [who the character is and what happens]\nStyle: [Sketchbook Watercolour / Painterly Pastoral / Rubber Hose 1930s / Mid-Century Modern / Comic-Strip Holiday Special / Silhouette Cutout / Claymation / Bold Graphic Shapes / Comic-Book Halftone / Folk Woodcut]\nVoices: [silent / babble / real dialogue]\nSpeech bubbles: [yes / no]\nShape: [16:9 / 9:16 / square]\nUse the detailed interview so I can approve the story first."
+  },
+  {
+    "id": "3d",
+    "name": "3D animation",
+    "art": "layers",
+    "cats": [
+      "animation",
+      "explainers",
+      "viral"
+    ],
+    "shape": "7 to 15 s",
+    "blurb": "A miniature world in one of 37 looks: low-poly, paper pop-up, soft clay, blueprint, neon sign, marble run. Lit and filmed like a real set.",
+    "give": "A topic, or a script with its voiceover",
+    "get": "A 3D clip with sound, timed to the words",
+    "ask": "Make a 12-second paper pop-up animation of how a bee makes honey.",
+    "brief": "Make a 3D animation with the 3D Style Atlas.\nStyle: [name one of the 37 looks, for example Low-Poly, Paper Pop-Up, Soft Clay, Blueprint Build]\nTopic: [what it should explain or show]\nVoiceover: [none, with a full sound mix / yes, here is the audio and its word timings]\nLength: [7 to 15] seconds.\nShow me the storyboard before you build it."
+  },
+  {
+    "id": "mograph",
+    "name": "Motion graphics explainer",
+    "art": "mograph",
+    "cats": [
+      "explainers",
+      "animation",
+      "marketing"
+    ],
+    "shape": "16:9 · 9:16",
+    "blurb": "Not an animated slide deck. When the voice names a brand, an app or a number, the viewer sees the logo, the app window or the chart.",
+    "give": "A script, and any screenshots only you have",
+    "get": "An MP4 timed to every word",
+    "ask": "Explain how our onboarding works in 90 seconds, with real screens and my voice.",
+    "brief": "Make a motion graphics explainer.\nTopic: [what it explains]\nVoice: [my cloned voice reading the script below / no voice]\nShape: [16:9 / 9:16 / both]\nMusic: [yes / no]   Sound effects: [yes / no]\nText on screen: [low / medium / high / you decide]\nExplain through action: things arrive, do something and change. Never put the sentence being spoken on screen.\nShow the real thing: real logos for brands, app windows for software, charts for numbers. Bullets only when nothing else fits.\nScreenshots and links I can give you: [list]\n\nScript:\n[paste]"
+  },
+  {
+    "id": "stick",
+    "name": "Stickman explainer",
+    "art": "stick",
+    "cats": [
+      "explainers",
+      "animation",
+      "marketing",
+      "viral"
+    ],
+    "shape": "16:9",
+    "blurb": "Stick figures with real expressions act out a script, one timed picture per line. Simple and cute, or full color.",
+    "give": "A script or a finished narration",
+    "get": "A narrated video in sync with the audio",
+    "ask": "Turn this script into a stickman explainer in the simple style.",
+    "brief": "Turn this script into a stickman explainer.\nArt direction: [Simple and Cute / Full-Color and Expressive]\nNarration: [make it from the script / use this audio file]\nOne picture per line, with the expression matching what is being said.\n\nScript:\n[paste]"
+  },
+  {
+    "id": "data",
+    "name": "Numbers that draw themselves",
+    "art": "chart",
+    "cats": [
+      "explainers",
+      "marketing"
+    ],
+    "shape": "Any",
+    "blurb": "Data becomes a chart that builds as the number is spoken: flat and clean, or as a 3D skyline of stacked blocks.",
+    "give": "The numbers and the point they make",
+    "get": "A chart sequence, alone or inside a longer video",
+    "ask": "Show these four quarterly numbers as a chart that builds as I say each one.",
+    "brief": "Show these numbers as a chart that builds as each one is spoken.\nNumbers: [label and value for each]\nThe point they make: [one sentence]\nLook: [flat chart in the house style / a 3D skyline of stacked blocks]\nVoiceover line: [what is said while it builds]"
+  },
+  {
+    "id": "title",
+    "name": "3D title",
+    "art": "flap",
+    "cats": [
+      "social",
+      "animation",
+      "viral"
+    ],
+    "shape": "5 to 10 s",
+    "blurb": "Words as objects: a split-flap departure board, letterpress in thick paper, a chunky app icon, letters the size of buildings.",
+    "give": "A short phrase",
+    "get": "A title clip with sound",
+    "ask": "Make a split-flap board title that flips to \"Doors open Monday\".",
+    "brief": "Make a 3D title with the 3D Style Atlas.\nStyle: [Split-Flap Board / Embossed / Hero Icon / Monument Type]\nWords: [the phrase, kept short]\nLength: [5 to 10] seconds, with sound.\nShape: [16:9 / 9:16]"
+  },
+  {
+    "id": "relit",
+    "name": "Relit clip",
+    "art": "relight",
+    "cats": [
+      "viral",
+      "studio",
+      "social"
+    ],
+    "shape": "3 to 10 s",
+    "blurb": "The same clip in a new light or a new place: golden hour, a studio, a different room.",
+    "give": "A short clip",
+    "get": "The clip, relit",
+    "ask": "Relight this clip so it looks like late-afternoon sun.",
+    "brief": "Relight this clip.\nClip: [file, 3 to 10 seconds]\nNew light or place: [describe it, or attach a reference image]\nLook: [cinematic / flat documentary]\nKeep the framing and my face exactly as they are.\nShow me the still before you make the video."
+  }
+];

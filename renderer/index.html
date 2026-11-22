@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' sve-media: data:; media-src 'self' sve-media:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'">
+  <title>Scale Video Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="drag-strip"></div>
+      <a class="brand" href="#" data-nav="home">
+        <img src="assets/scale-mark.svg" alt="" width="28" height="28">
+        <span>Scale Video Editor</span>
+      </a>
+      <nav class="nav">
+        <button class="nav-item" data-nav="home"><span class="ico">⌂</span>Home</button>
+        <button class="nav-item" data-nav="formats"><span class="ico">▦</span>Formats</button>
+        <button class="nav-item" data-nav="new"><span class="ico">＋</span>New project</button>
+      </nav>
+      <div class="side-label">Projects</div>
+      <div class="project-list" id="projectList"></div>
+      <div class="side-foot">
+        <button class="status-row" id="fcStatus" data-nav="filmcraft">
+          <span class="dot"></span><span class="txt">FilmCraft</span><span class="sub"></span>
+        </button>
+        <button class="status-row" id="agentStatus" data-nav="settings">
+          <span class="dot"></span><span class="txt">Agent</span><span class="sub"></span>
+        </button>
+        <button class="nav-item" data-nav="settings"><span class="ico">⚙</span>Settings</button>
+      </div>
+    </aside>
+
+    <main class="main" id="main"></main>
+  </div>
+
+  <div class="overlay hidden" id="overlay"></div>
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="data/formats.js"></script>
+  <script src="lib/brief.js"></script>
+  <script src="lib/art.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

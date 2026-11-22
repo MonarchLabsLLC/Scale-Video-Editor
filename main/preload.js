@@ -1,0 +1,42 @@
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
+
+const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
+
+contextBridge.exposeInMainWorld('sve', {
+  env: () => invoke('env:get'),
+  setSettings: patch => invoke('settings:set', patch),
+  projects: {
+    list: () => invoke('projects:list'),
+    create: opts => invoke('projects:create', opts),
+    get: id => invoke('projects:get', id),
+    update: (id, patch) => invoke('projects:update', id, patch),
+    rename: (id, name) => invoke('projects:rename', id, name),
+    files: id => invoke('projects:files', id),
+    chat: id => invoke('projects:chat', id),
+    newChat: id => invoke('projects:newChat', id)
+  },
+  agent: {
+    send: payload => invoke('agent:send', payload),
+    stop: id => invoke('agent:stop', id),
+    running: () => invoke('agent:running'),
+    onEvent: fn => {
+      const h = (_e, data) => fn(data);
+      ipcRenderer.on('agent:event', h);
+      return () => ipcRenderer.removeListener('agent:event', h);
+    }
+  },
+  filmcraft: {
+    status: () => invoke('filmcraft:status'),
+    connect: file => invoke('filmcraft:connect', file),
+    sequence: () => invoke('filmcraft:sequence'),
+    frame: seconds => invoke('filmcraft:frame', seconds)
+  },
+  os: {
+    pickFiles: () => invoke('os:pickFiles'),
+    reveal: p => invoke('os:reveal', p),
+    openPath: p => invoke('os:openPath', p),
+    openExternal: url => invoke('os:openExternal', url),
+    pathForFile: file => webUtils.getPathForFile(file)
+  },
+  mediaUrl: p => 'sve-media://local' + encodeURI(p.split('\\').join('/').replace(/^([A-Za-z]):/, '/$1:'))
+});
