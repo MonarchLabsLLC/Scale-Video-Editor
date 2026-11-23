@@ -183,6 +183,7 @@ function registerIpc() {
     const r = await agents.login(id, { openExternal: url => shell.openExternal(url), onLine: line => send('agent:login', { id, line }) });
     return { ...r, agents: await agents.detect() };
   });
+  ipcMain.handle('agents:loginCode', (_e, text) => agents.loginInput(text));
   ipcMain.handle('agents:cancelLogin', () => { if (agents.login.cancel) agents.login.cancel(); });
   ipcMain.handle('agents:detect', () => agents.detect());
 

@@ -425,3 +425,5 @@ button.tool-pill:hover { border-color: var(--label); }
 .conn.wait .kdot { background: var(--warn); animation: pulse 1.2s infinite; }
 .beta { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--hair); border-radius: 999px; padding: 1px 7px; color: var(--label); vertical-align: 2px; margin-right: 4px; }
 .agent-row .grow { flex: 1; min-width: 0; }
+.code-box { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--soft); border: 1px solid var(--hair); }
+.code-input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--hair); background: var(--panel); color: var(--ink); font-family: var(--mono); font-size: 13px; }

@@ -1307,6 +1307,20 @@ function agentRow(a, s, set) {
   else right = h('span', { class: 'row-gap', style: { marginTop: 0, alignItems: 'center' } },
     a.connected ? h('span', { class: 'conn ok' }, h('span', { class: 'kdot' }), 'Connected') : h('button', { class: 'btn small ghost', onclick: () => connectAgent(a), title: 'This agent cannot report its sign-in. Sign in again if it asks.' }, 'Sign in'),
     s.engine === a.id ? h('span', { class: 'pill on' }, 'Default') : h('button', { class: 'btn small', onclick: () => set({ engine: a.id }) }, 'Make default'));
+  const codeBox = connecting.has(a.id) && a.loginKind === 'browser' ? (() => {
+    const input = h('input', { type: 'password', class: 'code-input', placeholder: 'Paste the code here', autocomplete: 'off', spellcheck: 'false' });
+    const send = async () => {
+      const v = input.value.trim();
+      if (!v) { input.focus(); return; }
+      input.value = '';
+      const ok = await api.agents.loginCode(v);
+      toast(ok ? 'Code sent. Finishing sign-in…' : 'The sign-in is no longer waiting. Click Connect again.', 5000);
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+    return h('div', { class: 'code-box' },
+      h('div', { class: 'fh' }, `If ${a.vendor}’s page shows an authentication code, click Copy code there, paste it here and press Enter.`),
+      h('div', { class: 'row-gap' }, input, h('button', { class: 'btn small primary', onclick: send }, 'Finish sign-in')));
+  })() : null;
   const sub = !a.installed ? h('div', { style: { fontSize: '13px', marginTop: '4px' } }, 'Install in a terminal: ', h('code', null, a.installHint))
     : a.connected === false ? h('div', { class: 'fh' }, a.loginKind === 'browser' ? `Connect opens ${a.vendor}’s page. Sign in with your ${a.plan} plan and allow access.` : `Connect opens a Terminal window with the sign-in. Use your ${a.plan} account.`)
     : a.connected ? h('div', { class: 'fh' }, `Uses your own ${a.plan} plan.`)
@@ -1314,6 +1328,6 @@ function agentRow(a, s, set) {
   return h('div', { class: 'agent-row' + (a.connected ? ' is-on' : '') }, agentLogo(a.id),
     h('div', { class: 'grow' }, h('div', { style: { fontWeight: 600 } }, a.name, ' ',
       a.beta ? h('span', { class: 'beta' }, 'beta') : null,
-      h('span', { style: { color: 'var(--label)', fontWeight: 400 } }, a.installed ? ` · ${a.version || 'installed'}` : ' · not installed')), sub),
+      h('span', { style: { color: 'var(--label)', fontWeight: 400 } }, a.installed ? ` · ${a.version || 'installed'}` : ' · not installed')), sub, codeBox),
     right);
 }

@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('sve', {
     detect: () => invoke('agents:detect'),
     login: id => invoke('agents:login', id),
     cancelLogin: () => invoke('agents:cancelLogin'),
+    loginCode: text => invoke('agents:loginCode', text),
     onLoginLine: fn => { const h = (_e, d) => fn(d); ipcRenderer.on('agent:login', h); return () => ipcRenderer.removeListener('agent:login', h); }
   },
   agent: {

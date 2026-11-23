@@ -180,10 +180,20 @@ function login(id, { openExternal, onLine } = {}) {
     child.stdout.on('data', feed);
     child.stderr.on('data', feed);
     const timer = setTimeout(() => child.kill('SIGTERM'), 10 * 60_000);
-    child.on('close', code => { clearTimeout(timer); resolve({ code, output: all }); });
-    child.on('error', err => { clearTimeout(timer); resolve({ code: 1, output: err.message }); });
+    child.on('close', code => { clearTimeout(timer); login.child = null; resolve({ code, output: all }); });
+    child.on('error', err => { clearTimeout(timer); login.child = null; resolve({ code: 1, output: err.message }); });
+    login.child = child;
     login.cancel = () => child.kill('SIGTERM');
   });
+}
+
+// Some sign-ins (Claude Code without a terminal) show a code on the web page to paste back.
+// The person pastes it in the editor and it goes to the waiting sign-in command, nowhere else.
+function loginInput(text) {
+  const child = login.child;
+  if (!child || !child.stdin || child.stdin.destroyed) return false;
+  child.stdin.write(String(text).trim() + '\n');
+  return true;
 }
 
 function openTerminal(command) {
@@ -471,4 +481,4 @@ function runTurn(ctx, prompt, onEvent) {
   };
 }
 
-module.exports = { ENGINES, detect, login, openTerminal, runTurn, claudeArgs, codexArgs, cursorArgs, parseClaude, parseCodex, parseGeneric, systemPrompt, which };
+module.exports = { ENGINES, detect, login, loginInput, openTerminal, runTurn, claudeArgs, codexArgs, cursorArgs, parseClaude, parseCodex, parseGeneric, systemPrompt, which };
