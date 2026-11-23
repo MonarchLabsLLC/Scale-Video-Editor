@@ -68,10 +68,18 @@ function findApp() {
     return p || null;
   }
   if (process.platform === 'win32') {
+    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+    const cli = findCli();
     const p = [
+      // The app next to the CLI we use first, so the two stay the same version.
+      cli && path.join(path.dirname(cli), 'filmcraft.exe'),
+      path.join(os.homedir(), '.local', 'share', 'filmcraft-cli', 'filmcraft.exe'),
+      // The ArtCraft Launcher's MSI installs under its publisher folder.
+      path.join(programFiles, 'ArtCraft', 'FilmCraft', 'filmcraft.exe'),
       path.join(process.env.LOCALAPPDATA || '', 'Programs', 'FilmCraft', 'FilmCraft.exe'),
-      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'FilmCraft', 'FilmCraft.exe')
-    ].find(fs.existsSync);
+      path.join(programFiles, 'FilmCraft', 'FilmCraft.exe'),
+      onPath('filmcraft')
+    ].find(c => c && fs.existsSync(c));
     return p || null;
   }
   return onPath('filmcraft') || onPath('FilmCraft') || null;
@@ -168,7 +176,11 @@ async function startBridge(projectFile) {
     return { ok: false, reason: 'FilmCraft is open without its control bridge. Save your work, quit FilmCraft, then click Connect again.' };
   }
   const app = findApp();
-  if (!app) return { ok: false, reason: 'FilmCraft is not installed.' };
+  if (!app) {
+    return { ok: false, reason: findCli()
+      ? 'Found filmcraft-cli, but not the FilmCraft app. Install the FilmCraft app (same version as the CLI), then click Connect again.'
+      : 'FilmCraft is not installed.' };
+  }
   const args = ['--control', String(control.port)];
   if (projectFile) args.push(projectFile); else args.push('--empty');
   const env = { ...process.env, FILMCRAFT_CONTROL_TOKEN: control.token };
