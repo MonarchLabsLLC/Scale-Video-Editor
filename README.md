@@ -52,7 +52,7 @@ You do this only once. On macOS 14 or older you can also Control-click the app i
 
 **Linux.** Make the file executable, then run it: `chmod +x Scale-Video-Editor-linux.AppImage && ./Scale-Video-Editor-linux.AppImage`. Ubuntu 22.04 and newer also need `sudo apt install libfuse2` once.
 
-**Updates on an unsigned Mac.** macOS installs an update by itself only into a signed app. So the Mac app does not download updates yet: when a new version is out, the sidebar card offers **Download the new version**, which opens the releases page. Windows and Linux download the update in the background and install it on restart.
+**Updates.** After the first open, you do not need to download anything again. The app downloads each new version by itself and the sidebar shows **Restart to finish**. On a Mac, keep the app in your **Applications** folder: a copy opened straight from the `.dmg` cannot replace itself, and the sidebar says so.
 
 ## How it works
 
@@ -80,7 +80,7 @@ The FilmCraft control token is kept in `~/.config/filmcraft/control.env` (owner-
 The editor checks GitHub for a new version every time it starts, and every six hours while it is open. **Settings → Check for updates** (or **Check for Updates…** in the app menu) checks at once. When a new version is out, a card in the sidebar says so: click **Update now**, then **Restart to finish**.
 
 - Installed from source (the install prompt): it runs `git pull --ff-only` on `main`, and `npm install` when the dependencies changed. It does not update a copy that has uncommitted changes or is on another branch; it tells you why instead.
-- Installed from a `.dmg`, `.exe` or `.AppImage`: it downloads the new release in the background and installs it on restart. macOS allows this only for an app signed with a Developer ID, so until the releases are signed the Mac version does not download the update; it offers the download page instead.
+- Installed from a `.dmg`, `.exe` or `.AppImage`: it downloads the new release in the background and installs it on restart. On Windows and Linux this is electron-updater. macOS's own updater accepts only apps signed with a Developer ID, so the unsigned Mac app updates itself (`main/mac-install.js`): it downloads the new `.zip`, checks its SHA-512 from `latest-mac.yml`, the bundle id, the version and the code signature, then swaps the app after it quits and opens the new version. If anything fails, the old version stays. It never sends you to a web page unless a newer release exists and the app cannot replace itself (for example, it runs from the `.dmg`).
 
 ### Access
 
