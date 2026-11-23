@@ -8,21 +8,32 @@
 //    when the folder has uncommitted changes or is on another branch.
 //
 //  - "release": a .dmg, .exe or .AppImage from GitHub Releases. electron-updater downloads the
-//    new version in the background and installs it on restart. macOS only allows this for a
-//    code-signed app; if the update cannot be installed, the editor offers the download page.
+//    new version in the background and installs it on restart. macOS's own updater works only
+//    for an app signed with a Developer ID, so an unsigned Mac copy updates itself instead
+//    (main/mac-install.js): it downloads the new .zip, checks it, and swaps the app on restart.
 //
 // The state goes to the window on every change, so the sidebar and Settings always agree.
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFile } = require('node:child_process');
+const { execFile, spawnSync } = require('node:child_process');
 
 let REPO_DIR = path.join(__dirname, '..');
-const RELEASES_URL = 'https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases/latest';
+const REPO_URL = 'https://github.com/MonarchLabsLLC/Scale-Video-Editor';
+const RELEASES_URL = `${REPO_URL}/releases/latest`;
+const macInstall = require('./mac-install');
 
 let app = null;
 let send = () => {};
 let releaseUpdater = null;
+let selfUpdate = null; // can this release copy install updates by itself?
+let injectedUpdater = null;
+let fetchFn = null;      // for the Mac in-place download
+let workDir = null;      // where the Mac in-place update is staged
+let staged = null;       // { version, app } once a Mac in-place update is downloaded and checked
+let macBusy = false;
+let installing = false;
+let targetOverride = null; // tests: the .app to replace
 let state = { mode: 'none', status: 'idle', current: '', latest: '', behind: 0, message: '', checkedAt: 0 };
 
 function set(patch) {
@@ -76,17 +87,99 @@ async function applySource() {
 
 /* ---------- release installs (electron-updater) ---------- */
 
+// macOS (Squirrel.Mac) installs an update only into an app signed with a Developer ID. An
+// unsigned or ad hoc signed copy would download the whole update and then fail to install it.
+function canSelfUpdate() {
+  if (process.platform !== 'darwin') return true;
+  const bundle = path.resolve(process.execPath, '..', '..', '..');
+  const r = spawnSync('/usr/bin/codesign', ['-dv', '--verbose=2', bundle], { encoding: 'utf8', timeout: 10_000 });
+  return /Authority=Developer ID Application/.test(`${r.stdout || ''}${r.stderr || ''}`);
+}
+
+// One short line for the window: no file paths, no stack, no cache folders.
+const shortError = err => {
+  const m = String(err && err.message || err).split('\n')[0];
+  if (/code signature|did not pass validation|code requirement/i.test(m)) return 'macOS would not accept the new version';
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|network|fetch failed/i.test(m)) return 'no connection to GitHub';
+  if (/HTTP 404|status 404|Cannot find latest|No published versions/i.test(m)) return 'no published release was found';
+  const clean = m.replace(/(file:\/\/)?\/[^\s"')]+/g, '').replace(/\s+/g, ' ').trim();
+  return clean.length > 90 ? clean.slice(0, 87) + '…' : clean || 'unknown problem';
+};
+
+const releasePage = () => state.latest ? `${REPO_URL}/releases/tag/v${state.latest}` : RELEASES_URL;
+
+/* Mac copies without a Developer ID: download, check and stage the new app ourselves. */
+
+function macFileUrl(updater, info) {
+  const file = (info.files || []).find(f => /\.zip$/i.test(f.url));
+  if (!file) throw new Error('this release has no Mac .zip');
+  let url = null;
+  try {
+    const it = updater.updateInfoAndProvider;
+    const hit = it && it.provider.resolveFiles(it.info).find(f => /\.zip$/i.test(String(f.url)));
+    if (hit) url = String(hit.url);
+  } catch {}
+  return { url: url || `${REPO_URL}/releases/download/v${info.version}/${file.url}`, sha512: file.sha512, size: file.size };
+}
+
+async function macDownload(updater, info) {
+  if (staged && staged.version === info.version) return set({ status: 'ready', latest: info.version, message: `Version ${info.version} is ready. Restart the editor to use it.` });
+  if (macBusy) return state;
+  const target = targetOverride || macInstall.bundleOf(process.execPath);
+  const where = macInstall.canReplace(target);
+  if (!where.ok) {
+    return set({ status: 'manual', latest: info.version, message: where.reason === 'dmg' || where.reason === 'translocated'
+      ? `Version ${info.version} is out. Move Scale Video Editor to your Applications folder and open it from there, so it can update itself.`
+      : `Version ${info.version} is out, but this copy is in a folder it cannot change. Move it to your Applications folder.` });
+  }
+  macBusy = true;
+  try {
+    const file = macFileUrl(updater, info);
+    set({ status: 'downloading', latest: info.version, message: `Version ${info.version} is downloading…` });
+    const newApp = await macInstall.stage({
+      fetchFn: fetchFn || ((...a) => require('electron').net.fetch(...a)),
+      url: file.url, sha512: file.sha512, size: file.size, version: info.version,
+      workDir: workDir || macInstall.defaultWorkDir(), currentApp: target,
+      onProgress: pct => set({ status: 'downloading', message: `Downloading version ${info.version}: ${pct}%` })
+    });
+    staged = { version: info.version, app: newApp, target };
+    return set({ status: 'ready', message: `Version ${info.version} is ready. Restart the editor to use it.` });
+  } catch (err) {
+    return set({ status: 'available', message: `Version ${info.version} did not download (${shortError(err)}). Click Update now to try again.` });
+  } finally {
+    macBusy = false;
+  }
+}
+
+function macInstallStaged(relaunch) {
+  if (!staged || installing) return false;
+  installing = true;
+  macInstall.install({ staged: staged.app, target: staged.target, workDir: path.dirname(path.dirname(staged.app)), relaunch });
+  return true;
+}
+
 function loadReleaseUpdater() {
   if (releaseUpdater) return releaseUpdater;
-  const { autoUpdater } = require('electron-updater');
-  autoUpdater.autoDownload = true;
+  const autoUpdater = injectedUpdater || require('electron-updater').autoUpdater;
+  if (selfUpdate === null) selfUpdate = canSelfUpdate();
+  autoUpdater.autoDownload = selfUpdate;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on('checking-for-update', () => set({ status: 'checking', message: 'Checking for updates…' }));
   autoUpdater.on('update-not-available', () => set({ status: 'current', message: 'You have the latest version.', checkedAt: Date.now() }));
-  autoUpdater.on('update-available', info => set({ status: 'downloading', latest: info.version, message: `Version ${info.version} is downloading…` }));
+  autoUpdater.on('update-available', info => {
+    if (selfUpdate) return set({ status: 'downloading', latest: info.version, message: `Version ${info.version} is downloading…` });
+    set({ latest: info.version, checkedAt: Date.now() });
+    return macDownload(autoUpdater, info);
+  });
   autoUpdater.on('download-progress', p => set({ status: 'downloading', message: `Downloading version ${state.latest}: ${Math.round(p.percent)}%` }));
   autoUpdater.on('update-downloaded', info => set({ status: 'ready', latest: info.version, message: `Version ${info.version} is ready. Restart the editor to use it.` }));
-  autoUpdater.on('error', err => set({ status: 'manual', message: `The update could not install by itself (${String(err && err.message || err).split('\n')[0]}). Download the new version instead.` }));
+  autoUpdater.on('error', err => {
+    if (!selfUpdate) return; // the in-place Mac path reports its own errors
+    if (state.latest) set({ status: 'manual', message: `The update could not install by itself (${shortError(err)}). Download version ${state.latest} instead.` });
+    else set({ status: 'error', checkedAt: Date.now(), message: `Could not check for updates (${shortError(err)}).` });
+  });
+  // An update downloaded in place on a Mac is also installed when the editor quits.
+  if (!selfUpdate && app && typeof app.on === 'function') app.on('will-quit', () => { macInstallStaged(false); });
   releaseUpdater = autoUpdater;
   return autoUpdater;
 }
@@ -96,20 +189,33 @@ function loadReleaseUpdater() {
 function init(electronApp, sendToWindow, opts = {}) {
   app = electronApp;
   if (opts.dir) REPO_DIR = opts.dir;
+  if (typeof opts.selfUpdate === 'boolean') selfUpdate = opts.selfUpdate;
+  if (opts.autoUpdater) { injectedUpdater = opts.autoUpdater; releaseUpdater = null; }
+  if (opts.fetch) fetchFn = opts.fetch;
+  if (opts.workDir) workDir = opts.workDir;
+  if (opts.target) targetOverride = opts.target;
   send = sendToWindow;
+  staged = null; macBusy = false; installing = false;
+  state = { ...state, status: 'idle', latest: '', message: '' };
   state.mode = detectMode();
   state.current = app.getVersion();
 }
 
 async function check() {
-  if (state.status === 'downloading') return state;
+  if (state.status === 'downloading' || (state.status === 'ready' && staged)) return state;
   set({ status: 'checking', message: 'Checking for updates…' });
   try {
     if (state.mode === 'source') return await checkSource().finally(() => set({ checkedAt: Date.now() }));
-    if (state.mode === 'release') { await loadReleaseUpdater().checkForUpdates(); return state; }
+    if (state.mode === 'release') {
+      const result = await loadReleaseUpdater().checkForUpdates();
+      // A failed download is already reported through the 'error' event.
+      if (result && result.downloadPromise) result.downloadPromise.catch(() => {});
+      return state;
+    }
     return set({ status: 'unsupported', message: 'This copy was not installed from GitHub, so it cannot update itself.' });
   } catch (err) {
-    return set({ status: 'error', checkedAt: Date.now(), message: `Could not check for updates: ${(err.stderr || err.message || String(err)).split('\n')[0]}` });
+    if (state.status === 'manual' || state.status === 'downloading') return state;
+    return set({ status: 'error', checkedAt: Date.now(), message: `Could not check for updates (${shortError(err.stderr || err)}).` });
   }
 }
 
@@ -118,16 +224,21 @@ async function apply() {
     if (state.mode === 'source') return await applySource();
     if (state.mode === 'release') {
       if (state.status === 'ready') return state;
-      if (state.status === 'manual') { require('electron').shell.openExternal(RELEASES_URL); return state; }
+      // Never send anyone to an empty releases page: only open the page of a release we found.
+      if (state.status === 'manual' && state.latest) { require('electron').shell.openExternal(releasePage()); return state; }
+      if (state.status === 'available' && !selfUpdate && releaseUpdater && releaseUpdater.updateInfoAndProvider) {
+        return macDownload(releaseUpdater, releaseUpdater.updateInfoAndProvider.info);
+      }
       return check();
     }
     return state;
   } catch (err) {
-    return set({ status: 'error', message: `The update did not finish: ${(err.stderr || err.message || String(err)).split('\n')[0]}` });
+    return set({ status: 'error', message: `The update did not finish (${shortError(err.stderr || err)}).` });
   }
 }
 
 function restart() {
+  if (state.mode === 'release' && state.status === 'ready' && staged) { macInstallStaged(true); app.quit(); return; }
   if (state.mode === 'release' && state.status === 'ready' && releaseUpdater) { releaseUpdater.quitAndInstall(); return; }
   app.relaunch();
   app.exit(0);
