@@ -1478,21 +1478,34 @@ function findSheet(rows) {
     if (d) { folder = d; folderText.textContent = `Where: ${d.replace(/^\/Users\/[^/]+/, '~')} first, then the rest of the computer if needed.`; }
   } }, 'Choose a folder…');
   const line = (cls, text) => { log.append(h('div', { class: 'fl ' + cls }, text)); log.scrollTop = log.scrollHeight; };
+  // One line per part: waiting, looking, found (green check) or not found.
+  const items = new Map(rows.map(r => [r.part, h('li', { class: 'fp wait' }, h('span', { class: 'fp-ico' }), h('span', { class: 'fp-name' }, r.part), h('span', { class: 'fp-note' }, ''))]));
+  const mark = (part, st, note) => { const li = items.get(part); if (!li || li.classList.contains(st)) return; li.className = 'fp ' + st; li.querySelector('.fp-note').textContent = note || ''; };
+  const tick = (result, final) => {
+    const by = new Map((result.rows || []).map(x => [x.part, x]));
+    for (const r of rows) {
+      const now = by.get(r.part);
+      if (now && now.status === 'ok') mark(r.part, 'found', 'Found');
+      else if (final) mark(r.part, 'missing', 'Not found: click Install');
+      else mark(r.part, 'look', 'Looking…');
+    }
+    return rows.filter(r => by.get(r.part)?.status === 'ok').length;
+  };
   let off = null;
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true; pickBtn.disabled = true;
     log.classList.remove('hidden'); stopBtn.classList.remove('hidden');
     status.textContent = 'Starting the agent…';
     off = api.setup.onEvent(ev => {
-      if (ev.kind === 'start') status.textContent = `${agentInfo(ev.engine).name} is looking. This can take a few minutes.`;
+      if (ev.kind === 'start') { status.textContent = `${agentInfo(ev.engine).name} is looking. This can take a few minutes.`; for (const r of rows) mark(r.part, 'look', 'Looking…'); }
+      else if (ev.kind === 'progress') { const n = tick(ev.result, false); status.textContent = `${n} of ${rows.length} found so far. Still looking…`; }
       else if (ev.kind === 'text') line('t', ev.text);
       else if (ev.kind === 'tool') line('k', `${ev.name}${ev.detail ? ': ' + ev.detail : ''}`);
       else if (ev.kind === 'notice') line('k', ev.text || '');
       else if (ev.kind === 'done') { status.textContent = ev.ok === false ? (ev.error || 'The agent stopped.') : 'Done. Checking this computer again…'; stopBtn.classList.add('hidden'); }
       else if (ev.kind === 'checked') {
         state.kit = ev.result; saveChecks();
-        const now = rows.map(r => (ev.result.rows || []).find(x => x.part === r.part)).filter(Boolean);
-        const ready = now.filter(r => r.status === 'ok').length;
+        const ready = tick(ev.result, true);
         status.textContent = `${ready} of ${rows.length} ready now.${ready < rows.length ? ' The rest keep their Install button.' : ''}`;
         startBtn.classList.add('hidden'); closeBtn.classList.add('primary');
         off && off(); off = null; renderSidebar();
@@ -1508,7 +1521,7 @@ function findSheet(rows) {
       h('p', { class: 'eyebrow' }, 'Already on this computer'),
       h('h2', null, rows.length === 1 ? `Find ${rows[0].part}` : `Find ${rows.length} parts`),
       h('p', { class: 'fh' }, 'Your agent searches this computer and connects what it finds where the toolkit looks (with a link, so nothing is moved). It never deletes or downloads anything, and it never reads your keys. Whatever it cannot find stays “not installed”, and you can click Install.'),
-      h('ul', { class: 'find-parts' }, rows.map(r => h('li', null, r.part))),
+      h('ul', { class: 'find-parts' }, [...items.values()]),
       h('div', { class: 'row-gap', style: { alignItems: 'center' } }, pickBtn, folderText),
       log),
     h('div', { class: 'sheet-foot' }, status, h('span', { class: 'grow' }), stopBtn, closeBtn, startBtn)));

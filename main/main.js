@@ -152,7 +152,8 @@ async function takeSnapshots() {
   await js("window.__sve.go({ view: 'tools', tool: 'voice' })"); await wait(600); await shot('4b-tools');
   await js("window.__sve.go({ view: 'setup' })"); await wait(300); await shot('4c-setup');
   await js("window.__sve.go({ view: 'setup' })"); await wait(1500); await shot('4c2-setup-loaded');
-  await js("findSheet([{ part: 'WhisperX', detail: 'not installed' }, { part: 'Herk', detail: 'not installed' }])"); await wait(300); await shot('4d-find-sheet');
+  await js("findSheet([{ part: 'WhisperX', detail: 'not installed' }, { part: 'Herk', detail: 'not installed' }, { part: 'Earshot', detail: 'not installed' }])"); await wait(300); await shot('4d-find-sheet');
+  await js("const l = [...document.querySelectorAll('.find-parts .fp')]; l[0].className = 'fp found'; l[0].querySelector('.fp-note').textContent = 'Found'; l[1].className = 'fp look'; l[1].querySelector('.fp-note').textContent = 'Looking…'; l[2].className = 'fp missing'; l[2].querySelector('.fp-note').textContent = 'Not found: click Install'"); await wait(500); await shot('4e-find-progress');
   await js("document.querySelector('#overlay').classList.add('hidden'); document.querySelector('#overlay').innerHTML = ''");
   await js("window.__sve.go({ view: 'settings' })"); await wait(300); await js("document.querySelectorAll('*').forEach(e => { if (e.scrollTop) e.scrollTop = 0; })"); await shot('5-settings');
   await js("window.__sve.state.update = { status: 'available', current: '0.1.2', latest: '0.1.3', message: '' }; drawUpdateSlot(); window.__sve.go({ view: 'settings' })"); await wait(300); await shot('5b-update-notice');
@@ -272,11 +273,19 @@ async function startFinder(parts, folder) {
   };
   const prompt = `Find these parts on this computer and connect them for the toolkit:\n${list}\n\n${where}`;
   send('setup:event', { kind: 'start', engine });
+  // While the agent works, check again every few seconds so the sheet ticks off each part as it is connected.
+  let checking = false;
+  const poll = setInterval(() => {
+    if (checking || !finder) return;
+    checking = true;
+    toolkit.verify(settings.toolkitDir).then(result => { if (finder) send('setup:event', { kind: 'progress', result }); }).catch(() => {}).finally(() => { checking = false; });
+  }, 5000);
   return new Promise(resolve => {
     finder = agents.runTurn(ctx, prompt, ev => {
       send('setup:event', ev);
       if (ev.kind === 'done') {
         finder = null;
+        clearInterval(poll);
         toolkit.verify(settings.toolkitDir).then(result => { send('setup:event', { kind: 'checked', result }); });
       }
     });

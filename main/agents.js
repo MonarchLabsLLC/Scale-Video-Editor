@@ -220,7 +220,9 @@ function setupPrompt({ toolkitDir }) {
     'When you find a part, connect it where the check expects it: a symbolic link, or a path or setting the toolkit documents. Do not copy large folders when a link works.',
     'Never move, rename, overwrite or delete the person’s own files. If the place the check expects already has something in it, leave it and say so.',
     'Never install, download or buy anything. If a part is not on this computer, say "not found" for it: the person can click Install afterwards.',
-    'Keys: never read, print, copy or move an API key or password, and never open a file only to look for one. For a key row, you may only say whether the Keychain already has the toolkit’s entry (security find-generic-password -s <service> without -w), and otherwise say the person adds it with the command on the Setup page.',
+    'Keys: never read, print, copy or move an API key or password, never use security with -w or -g, never run security dump-keychain with -d, and never open a file only to look for a key.',
+    'A key may already be in the Keychain under another name (for example one an older tool or Codex made). To find it, list only the Keychain item names: security dump-keychain | grep \'"svce"\' (no -d: that prints names, never secrets). Pick the item whose name clearly matches the service (ElevenLabs, OpenAI) and confirm it exists with security find-generic-password -s "<name>" without -w.',
+    'Then write only that item name, never the key, into ~/.config/scale-video-toolkit/keys.json, for example {"elevenlabs": "<name>"} or {"openai": "<name>"}; keep any other entries. The toolkit then uses that Keychain item. If no item clearly matches, say "not found": the person adds the key with the command on the Setup page.',
     'An ElevenLabs voice ID is not a secret. If you find the person’s voice ID in an older settings file, you may put it in voice_id in ~/.config/scale-video-toolkit/voice.json; keep every other field.',
     'Do not play sound and do not open windows.',
     'When you are done, run tools/verify-install.sh again and end with a short list: one line per part, "connected: <where>" or "not found".'

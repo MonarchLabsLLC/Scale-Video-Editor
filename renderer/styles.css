@@ -582,3 +582,18 @@ button.tool-pill:hover { border-color: var(--label); }
 .vin { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--hair); background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; }
 .vin.mono { font-family: var(--mono); font-size: 12px; }
 .voice-pick[hidden] { display: none; }
+.find-parts { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.find-parts .fp { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; transition: background .3s; }
+.find-parts .fp-name { flex: 1; }
+.find-parts .fp-note { font-size: 12px; color: var(--label); }
+.find-parts .fp-ico { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--hair); display: grid; place-items: center; font-size: 11px; flex: none; }
+.find-parts .fp.look .fp-ico { border-color: var(--label); border-top-color: transparent; animation: fp-spin .9s linear infinite; }
+.find-parts .fp.found { background: color-mix(in srgb, #3f9b5a 10%, transparent); }
+.find-parts .fp.found .fp-ico { background: #3f9b5a; border-color: #3f9b5a; animation: fp-pop .35s ease-out; }
+.find-parts .fp.found .fp-ico::after { content: '✓'; color: #fff; font-weight: 700; }
+.find-parts .fp.found .fp-note { color: #2f7d46; font-weight: 600; }
+.find-parts .fp.missing .fp-ico { border-color: #c0613f; }
+.find-parts .fp.missing .fp-ico::after { content: '✕'; color: #c0613f; font-weight: 700; }
+.find-parts .fp.missing .fp-note { color: #a6502f; }
+@keyframes fp-spin { to { transform: rotate(360deg); } }
+@keyframes fp-pop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
