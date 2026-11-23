@@ -27,7 +27,7 @@ function homeBrand() { const v = state.homeBrand === undefined ? defaultBrand() 
 
 const BRAND_SOURCES = [
   { name: 'BrandBaser', where: 'brandbaser.com/brand-kits', url: 'https://brandbaser.com/brand-kits', how: 'Open Brand Kits, open your kit, and click Download DESIGN.md file.', tone: 'pink' },
-  { name: 'ClickCampaigns', where: 'clickcampaigns.ai', url: 'https://clickcampaigns.ai', how: 'Click Brand Kits on the main dashboard, open your kit, and click Download DESIGN.md file.', tone: 'lilac' },
+  { name: 'ClickCampaigns', where: 'clickcampaigns.ai/welcome', url: 'https://clickcampaigns.ai/welcome', how: 'Click Brand Kits on the main dashboard, open your kit, and click Download DESIGN.md file.', tone: 'lilac' },
   { name: 'PageBuilder templates', where: 'pagebuilder.gg', url: 'https://pagebuilder.gg/?library=templates', how: 'Pick a template whose look you like and download its DESIGN.md.', tone: 'mint' },
   { name: 'getdesign.md', where: 'getdesign.md', url: 'https://getdesign.md/', how: 'Design guides inspired by well-known websites. Paste the link to one here, or download its file.', tone: 'cream' }
 ];
