@@ -101,6 +101,12 @@ function createWindow() {
     setTimeout(() => updater.check(), 4000);
     setInterval(() => updater.check(), 6 * 60 * 60 * 1000).unref();
   });
+  // Also check when the person comes back to the app after a while, so a long-open window
+  // still learns about a new version.
+  if (!SNAPSHOT_DIR) win.on('focus', () => {
+    const u = updater.get();
+    if (!['checking', 'downloading', 'ready'].includes(u.status) && Date.now() - (u.checkedAt || 0) > 30 * 60 * 1000) updater.check();
+  });
   if (SNAPSHOT_DIR) win.webContents.once('did-finish-load', () => takeSnapshots().catch(err => { console.error(err); app.exit(1); }));
 }
 
@@ -127,6 +133,8 @@ async function takeSnapshots() {
   // Show a chosen model and its effort without saving it to the real settings.
   await js("window.__sve.state.env.settings.models = { ...(window.__sve.state.env.settings.models || {}), claude: { model: 'opus', effort: 'medium' } }; window.__sve.go({ view: 'home' })"); await wait(1500);
   await js("document.querySelector('.model-pick .mini-select')?.click()"); await wait(400); await shot('1e-model-menu');
+  await js("document.body.click()"); await wait(200);
+  await js("document.querySelector('.model-pick .effort-btn')?.click()"); await wait(400); await shot('1f-effort-menu');
   await js("document.body.click()");
   await js("document.querySelector('.pcard .more-btn')?.click()"); await wait(200); await shot('1b-menu');
   await js("[...document.querySelectorAll('.pop-menu .menu-item')].find(b => b.textContent.startsWith('Delete'))?.click()"); await wait(200); await shot('1c-delete');
@@ -142,6 +150,8 @@ async function takeSnapshots() {
   await js("window.__sve.go({ view: 'tools', tool: 'voice' })"); await wait(600); await shot('4b-tools');
   await js("window.__sve.go({ view: 'setup' })"); await wait(300); await shot('4c-setup');
   await js("window.__sve.go({ view: 'settings' })"); await wait(300); await js("document.querySelectorAll('*').forEach(e => { if (e.scrollTop) e.scrollTop = 0; })"); await shot('5-settings');
+  await js("window.__sve.state.update = { status: 'available', current: '0.1.2', latest: '0.1.3', message: '' }; drawUpdateSlot(); window.__sve.go({ view: 'settings' })"); await wait(300); await shot('5b-update-notice');
+  await js("window.__sve.state.update = null; drawUpdateSlot()");
   await js("window.__sve.go({ view: 'filmcraft' })"); await shot('6-filmcraft');
   // Brand Guides. SVE_SNAPSHOT_BRANDS="site.com,https://link/DESIGN.md" adds those first (needs the network).
   for (const link of (process.env.SVE_SNAPSHOT_BRANDS || '').split(',').filter(Boolean)) {

@@ -116,7 +116,18 @@ h2.section { font-size: 40px; line-height: 1.02; letter-spacing: -0.045em; font-
 .effort-row .eff { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--hair); font-size: 13px; font-weight: 600; }
 .effort-row .eff:hover { background: var(--soft); }
 .effort-row .eff.on { background: var(--ink, #111); color: var(--panel, #fff); border-color: transparent; }
+.model-pick { display: inline-flex; gap: 6px; align-items: center; }
 .model-pick .menu { min-width: 320px; max-width: 380px; }
+.model-pick .menu:not(.effort-menu) { display: flex; align-items: stretch; max-width: none; padding: 0; overflow: hidden !important; }
+.model-pick .mp-list, .model-pick .mp-shelf { min-height: 0; }
+.model-pick .mp-list { width: 330px; padding: 6px; overflow-y: auto; }
+.model-pick .mp-shelf { width: 230px; padding: 6px; border-left: 1px solid var(--hair); background: var(--soft); overflow-y: auto; }
+.model-pick .mp-shelf.slide { animation: shelf-in .18s ease-out; }
+@keyframes shelf-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+.model-pick .menu-item.on { background: var(--soft); }
+.model-pick .mp-shelf .menu-item.on { background: var(--panel); }
+.model-pick .effort-menu { min-width: 260px; }
+.effort-btn[hidden] { display: none; }
 .model-pick > .mini-select { border: 1px solid var(--hair); }
 .settings-model { margin-top: 8px; align-items: center; }
 .agent-logo { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
@@ -308,6 +319,8 @@ details.prompt-preview pre { white-space: pre-wrap; font-family: var(--mono); fo
 .update-card .label-sm, .update-card .update-msg { margin: 0; }
 .update-card .update-msg { font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 .update-card .btn { justify-self: start; }
+.update-card .label-sm { display: flex; align-items: center; gap: 8px; }
+.update-card .up-ico { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 999px; background: var(--lilac-ink); color: var(--lilac); font-weight: 800; font-size: 12px; }
 .row-gap { display: flex; gap: 8px; margin-top: 6px; }
 /* Settings and FilmCraft pages: section titles are labels, not page headlines */
 .page.compact .section-head { margin: 36px 0 12px; }

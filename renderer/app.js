@@ -276,9 +276,14 @@ function fitMenu(menu, anchor) {
   menu.classList.toggle('down', down);
   menu.style.maxHeight = Math.max(160, down ? below : above) + 'px';
   menu.style.overflowY = 'auto';
+  // Keep it inside the window on the right too (the model menu is wide with its shelf open).
+  const mr = menu.getBoundingClientRect();
+  const over = mr.right - (innerWidth - 12);
+  if (over > 0) menu.style.left = ((parseFloat(menu.style.left) || 0) - over) + 'px';
 }
 
 /* ---------- model picker ---------- */
+const EFFORT_HINTS = { '': 'The model’s usual level', low: 'Quickest answers', medium: 'Balanced', high: 'Thinks harder', xhigh: 'Thinks much harder', max: 'Deepest thinking, slowest', ultra: 'Most thinking of all', minimal: 'Almost none', none: 'No extra thinking' };
 const EFFORT_NAMES = { '': 'Standard', none: 'None', minimal: 'Minimal', low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra high', max: 'Max', ultra: 'Ultra' };
 function modelChoice(engine) { return (state.env?.settings?.models || {})[engine] || { model: '', effort: '' }; }
 async function loadModels(engine, refresh) {
@@ -291,10 +296,16 @@ function modelLabel(engine) {
   if (!c.model) return 'Model: agent default';
   const m = list?.models.find(x => x.id === c.model);
   const name = m ? m.label : c.model;
-  const effort = m && m.efforts.length ? (c.effort || m.defaultEffort) : '';
-  return effort ? `Model: ${name} · ${EFFORT_NAMES[effort] || effort}` : `Model: ${name}`;
+  return `Model: ${name}`;
 }
-function ago(t) {
+// The chosen model and its reasoning level, or null when that model has no reasoning levels.
+function currentEffort(engine) {
+  const c = modelChoice(engine);
+  const m = c.model && state.models[engine]?.models.find(x => x.id === c.model);
+  if (!m || !m.efforts.length) return null;
+  return { model: m, effort: c.effort && m.efforts.includes(c.effort) ? c.effort : m.defaultEffort };
+}
+function agoLong(t) {
   if (!t) return 'not checked yet';
   const s = Math.round((Date.now() - t) / 1000);
   return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} days ago`;
@@ -303,46 +314,89 @@ function modelPicker({ engine, up = true }) {
   const wrap = h('div', { class: 'agent-pick model-pick' });
   const btn = h('button', { class: 'mini-select', type: 'button', title: `Choose the model ${agentInfo(engine).name || 'the agent'} uses` },
     h('span', { class: 'mp-label' }, modelLabel(engine)), h('span', { style: { opacity: .5 } }, '▾'));
-  wrap.append(btn);
-  const relabel = () => { btn.querySelector('.mp-label').textContent = modelLabel(engine); };
+  // Its own button for the reasoning level, next to the model, so it is easy to find.
+  const ebtn = h('button', { class: 'mini-select effort-btn', type: 'button', title: 'Choose how hard the model thinks' },
+    h('span', { class: 'mp-elabel' }, ''), h('span', { style: { opacity: .5 } }, '▾'));
+  wrap.append(btn, ebtn);
+  const relabel = () => {
+    btn.querySelector('.mp-label').textContent = modelLabel(engine);
+    const ce = currentEffort(engine);
+    ebtn.hidden = !ce;
+    if (ce) ebtn.querySelector('.mp-elabel').textContent = `Reasoning: ${EFFORT_NAMES[ce.effort] || ce.effort}`;
+  };
+  relabel();
+  ebtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = wrap.querySelector('.menu');
+    if (open) { const was = open.classList.contains('effort-menu'); open.remove(); if (was) return; }
+    const ce = currentEffort(engine);
+    if (!ce) return;
+    const menu = h('div', { class: 'menu effort-menu' + (up ? '' : ' down') });
+    menu.addEventListener('click', ev => ev.stopPropagation());
+    const drawE = () => {
+      const now = currentEffort(engine);
+      menu.innerHTML = '';
+      menu.append(h('div', { class: 'menu-head' }, `Reasoning for ${now.model.label}`),
+        ...now.model.efforts.map(x => h('button', {
+          class: 'menu-item eff-item' + (x === now.effort ? ' on' : ''), type: 'button',
+          onclick: async ev => { ev.stopPropagation(); await save({ model: now.model.id, effort: x }); menu.remove(); }
+        }, h('span', null, h('div', { class: 'mi-name' }, EFFORT_NAMES[x] || x), EFFORT_HINTS[x] ? h('div', { class: 'mi-sub' }, EFFORT_HINTS[x]) : null),
+          x === now.effort ? h('span', { class: 'mi-check' }, '✓') : null)),
+        h('div', { class: 'menu-note' }, 'More reasoning: better on hard videos, slower, uses more of your plan.'));
+    };
+    drawE();
+    wrap.append(menu);
+    menu.style.left = (ebtn.offsetLeft) + 'px';
+    fitMenu(menu, ebtn);
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  });
   wrap.relabel = relabel;
   if (!state.models[engine]) loadModels(engine).then(relabel);
   const save = async choice => { state.env.settings = await api.agents.setModel(engine, choice); relabel(); };
-  const draw = menu => {
+  // Two panels: the models on the left; when the chosen model has reasoning levels, a shelf
+  // slides out on the right with them, so nobody has to scroll to find the reasoning.
+  const draw = (menu, slide) => {
     const list = state.models[engine] || { models: [], fallback: '' };
     const c = modelChoice(engine);
+    const cur = list.models.find(x => x.id === c.model);
     menu.innerHTML = '';
-    menu.append(h('div', { class: 'menu-head' }, `Model for ${agentInfo(engine).name || 'this agent'}`));
+    const left = h('div', { class: 'mp-list' }, h('div', { class: 'menu-head' }, `Model for ${agentInfo(engine).name || 'this agent'}`));
     const item = (id, name, sub) => h('button', {
-      class: 'menu-item', type: 'button', onclick: async ev => {
+      class: 'menu-item' + ((c.model || '') === id ? ' on' : ''), type: 'button', onclick: async ev => {
         ev.stopPropagation();
         const m = list.models.find(x => x.id === id);
         const effort = m && m.efforts.length ? (m.efforts.includes(c.effort) ? c.effort : m.defaultEffort) : '';
         await save({ model: id, effort });
-        draw(menu);
+        draw(menu, true);
       }
     }, h('span', null, h('div', { class: 'mi-name' }, name), sub ? h('div', { class: 'mi-sub' }, sub) : null),
-      (c.model || '') === id ? h('span', { class: 'mi-check' }, '✓') : null);
-    menu.append(item('', 'Default', `Uses the ${list.fallback || 'agent setting'}`));
-    if (!list.models.length) menu.append(h('div', { class: 'menu-note' }, state.models[engine] ? 'This agent did not list its models. It uses its own setting.' : 'Loading the models…'));
-    for (const m of list.models) menu.append(item(m.id, m.label, m.note || (m.id !== m.label ? m.id : '')));
-    const cur = list.models.find(x => x.id === c.model);
-    if (cur && cur.efforts.length) {
-      const effort = c.effort || cur.defaultEffort;
-      menu.append(h('div', { class: 'menu-sep' }), h('div', { class: 'menu-head' }, 'Effort'),
-        h('div', { class: 'effort-row' }, cur.efforts.map(e => h('button', {
-          class: 'eff' + (e === effort ? ' on' : ''), type: 'button',
-          onclick: async ev => { ev.stopPropagation(); await save({ model: cur.id, effort: e }); draw(menu); }
-        }, EFFORT_NAMES[e] || e))),
-        h('div', { class: 'menu-note' }, 'More effort thinks longer: better for hard videos, slower and uses more of your plan.'));
-    }
-    menu.append(h('div', { class: 'menu-sep' }), h('button', {
+      (c.model || '') === id ? h('span', { class: 'mi-check' }, m_has(id) ? '›' : '✓') : null);
+    const m_has = id => { const m = list.models.find(x => x.id === id); return !!(m && m.efforts.length); };
+    left.append(item('', 'Default', `Uses the ${list.fallback || 'agent setting'}`));
+    if (!list.models.length) left.append(h('div', { class: 'menu-note' }, state.models[engine] ? 'This agent did not list its models. It uses its own setting.' : 'Loading the models…'));
+    for (const m of list.models) left.append(item(m.id, m.label, m.note || (m.id !== m.label ? m.id : '')));
+    left.append(h('div', { class: 'menu-sep' }), h('button', {
       class: 'menu-item', type: 'button', onclick: async ev => {
         ev.stopPropagation();
         ev.currentTarget.querySelector('.mi-sub').textContent = 'Checking…';
         await loadModels(engine, true); relabel(); draw(menu);
       }
-    }, h('span', { class: 'mi-sub' }, `Check for new models · updated ${ago(list.fetched)}`)));
+    }, h('span', { class: 'mi-sub' }, `Check for new models · updated ${agoLong(list.fetched)}`)));
+    menu.append(left);
+    if (cur && cur.efforts.length) {
+      const effort = c.effort || cur.defaultEffort;
+      menu.append(h('div', { class: 'mp-shelf' + (slide ? ' slide' : '') },
+        h('div', { class: 'menu-head' }, 'Reasoning'),
+        h('div', { class: 'menu-note', style: { paddingTop: 0 } }, cur.label),
+        cur.efforts.map(e => h('button', {
+          class: 'menu-item eff-item' + (e === effort ? ' on' : ''), type: 'button',
+          onclick: async ev => { ev.stopPropagation(); await save({ model: cur.id, effort: e }); draw(menu); }
+        }, h('span', null, h('div', { class: 'mi-name' }, EFFORT_NAMES[e] || e), EFFORT_HINTS[e] ? h('div', { class: 'mi-sub' }, EFFORT_HINTS[e]) : null),
+          e === effort ? h('span', { class: 'mi-check' }, '✓') : null)),
+        h('div', { class: 'menu-note' }, 'More reasoning: better on hard videos, slower, uses more of your plan.')));
+    }
+    if (menu.isConnected) fitMenu(menu, btn);
   };
   btn.addEventListener('click', e => {
     e.stopPropagation();
@@ -914,7 +968,8 @@ function viewSettings() {
     h('span', { class: 'eyebrow' }, 'Settings'),
     h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'Your agent, your keys.'),
     h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use. Click Connect, sign in on the agent’s own page, and it uses your own subscription.'),
-    h('div', { class: 'section-head', style: { marginTop: '8px' } }, h('h2', { class: 'section' }, 'Agents')),
+    updateSection(),
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Agents')),
     h('div', { class: 'agent-rows' }, env.agents.map(a => agentRow(a, s, set))),
     h('div', { style: { marginTop: '10px' } }, h('button', { class: 'btn small ghost', onclick: async () => { await refreshEnv(); render(); toast('Checked again.'); } }, 'Check again')),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Access')),
@@ -925,7 +980,6 @@ function viewSettings() {
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Scale Video Toolkit')),
     h('div', { class: 'field' }, h('div', null, env.toolkitDir ? `Found at ${env.toolkitDir}. The agent reads its CLAUDE.md for which tool fits each kind of video.` : 'Not found on this computer. The agent works without it, with fewer specialist tools.'),
       h('div', { class: 'row-gap' }, h('button', { class: 'btn small', onclick: () => go({ view: 'setup' }) }, 'Open Setup'), h('button', { class: 'btn small ghost', onclick: () => go({ view: 'tools' }) }, 'See the tools'))),
-    updateSection(),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Projects folder')),
     h('div', { class: 'field' }, h('div', null, env.projectsRoot), h('div', { class: 'fh' }, 'Each project is a normal folder with media, work and exports inside.')),
     h('p', { style: { color: 'var(--label)', marginTop: '40px', fontSize: '12px' } }, `Scale Video Editor ${env.version || ''} · open source · FilmCraft is a separate Apache-2.0 project by storytold.`));
@@ -1152,9 +1206,15 @@ function drawUpdateSlot() {
   slot.innerHTML = '';
   const u = state.update;
   if (!u || !UPDATE_LIVE.includes(u.status)) return;
-  slot.append(h('div', { class: 'update-card' },
-    h('p', { class: 'label-sm' }, u.status === 'ready' ? 'Update ready' : 'Update available'),
-    h('p', { class: 'update-msg' }, u.message),
+  const ready = u.status === 'ready';
+  const busy = u.status === 'downloading';
+  slot.append(h('div', { class: 'update-card' + (ready ? ' ready' : '') },
+    h('p', { class: 'label-sm' }, h('span', { class: 'up-ico', 'aria-hidden': 'true' }, '↑'),
+      ready ? 'Update ready' : busy ? 'Updating…' : `New version${u.latest ? ' ' + u.latest : ''}`),
+    h('p', { class: 'update-msg' }, ready ? 'Restart the app to finish the update.'
+      : busy ? 'Downloading the new version. Keep working.'
+      : u.status === 'manual' ? u.message
+      : `There is an update. Click to update to the latest version${u.latest ? ' (' + u.latest + ')' : ''}.`),
     updateActions(u, true)));
 }
 function updateSection() {
@@ -1164,7 +1224,7 @@ function updateSection() {
     h('div', { class: 'field' },
       h('div', null, `Scale Video Editor ${u.current || state.env?.version || ''}`),
       h('div', { class: 'fh' }, u.message || 'The editor checks for a new version every time it starts.'),
-      u.checkedAt ? h('div', { class: 'fh' }, `Last checked ${ago(u.checkedAt)} ago.`) : null,
+      u.checkedAt ? h('div', { class: 'fh' }, `Last checked ${agoLong(u.checkedAt)}.`) : null,
       h('div', { class: 'row-gap' }, updateActions(u, false)))
   ];
 }
@@ -1474,7 +1534,7 @@ function agentRow(a, s, set) {
   const sub = !a.installed ? h('div', { style: { fontSize: '13px', marginTop: '4px' } }, 'Install in a terminal: ', h('code', null, a.installHint))
     : a.connected === false ? h('div', { class: 'fh' }, a.loginKind === 'browser' ? `Connect opens ${a.vendor}’s page. Sign in with your ${a.plan} plan and allow access.` : `Connect opens a Terminal window with the sign-in. Use your ${a.plan} account.`)
     : a.connected ? h('div', null, h('div', { class: 'fh' }, `Uses your own ${a.plan} plan.`),
-      h('div', { class: 'row-gap settings-model' }, h('span', { class: 'fh', style: { margin: 0 } }, 'Model and effort:'), modelPicker({ engine: a.id, up: false })))
+      h('div', { class: 'row-gap settings-model' }, h('span', { class: 'fh', style: { margin: 0 } }, 'Model and reasoning:'), modelPicker({ engine: a.id, up: false })))
     : h('div', { class: 'fh' }, 'Installed. It cannot report whether it is signed in; if a reply asks you to sign in, click Sign in.');
   return h('div', { class: 'agent-row' + (a.connected ? ' is-on' : '') }, agentLogo(a.id),
     h('div', { class: 'grow' }, h('div', { style: { fontWeight: 600 } }, a.name, ' ',
