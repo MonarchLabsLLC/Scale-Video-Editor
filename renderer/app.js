@@ -76,10 +76,19 @@ function md(src) {
   blocks.forEach((b, i) => {
     if (i % 2 === 1) { out += `<pre>${esc(b.replace(/^[a-z]*\n/, ''))}</pre>`; return; }
     const lines = b.split('\n');
-    let list = null, para = [];
+    let list = null, para = [], table = null;
     const flush = () => { if (para.length) { out += `<p>${inline(para.join(' '))}</p>`; para = []; } };
-    const close = () => { if (list) { out += `</${list}>`; list = null; } };
+    const closeTable = () => { if (table) { out += `<table class="md-table">${table.map((r, j) => `<tr>${r.map(c => j ? `<td>${inline(c)}</td>` : `<th>${inline(c)}</th>`).join('')}</tr>`).join('')}</table>`; table = null; } };
+    const close = () => { if (list) { out += `</${list}>`; list = null; } closeTable(); };
     for (const line of lines) {
+      if (/^\s*\|.*\|\s*$/.test(line)) {
+        flush(); if (list) { out += `</${list}>`; list = null; }
+        const cells = line.trim().slice(1, -1).split('|').map(c => c.trim());
+        if (cells.every(c => /^:?-{2,}:?$/.test(c))) continue;
+        (table || (table = [])).push(cells);
+        continue;
+      }
+      closeTable();
       const ul = line.match(/^\s*[-*]\s+(.*)/), ol = line.match(/^\s*\d+[.)]\s+(.*)/), hd = line.match(/^(#{1,4})\s+(.*)/);
       if (ul || ol) {
         flush();
@@ -167,12 +176,14 @@ function render() {
   else if (v === 'filmcraft') main.append(viewFilmcraft());
   else if (v === 'tools') main.append(viewTools());
   else if (v === 'setup') main.append(viewSetup());
+  else if (v === 'brands') main.append(viewBrands());
+  else if (v === 'brand') main.append(viewBrand(state.route.id));
   else main.append(viewHome());
 }
 
 /* ---------- sidebar ---------- */
 function renderSidebar() {
-  document.querySelectorAll('.nav-item[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === state.route.view));
+  document.querySelectorAll('.nav-item[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === (state.route.view === 'brand' ? 'brands' : state.route.view)));
   const list = $('#projectList');
   list.innerHTML = '';
   if (!state.projects.length) list.append(h('div', { class: 'side-empty' }, 'No projects yet.'));
@@ -307,6 +318,8 @@ function viewHome() {
   const engine = state.env?.settings?.engine || 'claude';
   let chosen = engine;
   const picker = agentPicker({ value: chosen, onChange: async id => { chosen = id; state.env.settings = await api.setSettings({ engine: id }); render(); } });
+  const brand = homeBrand();
+  const bpick = brandPicker({ value: brand, onChange: uid => { state.homeBrand = uid; render(); } });
   const page = h('div', { class: 'page' },
     h('div', { class: 'topdrag' }),
     setupBanner(),
@@ -314,9 +327,9 @@ function viewHome() {
     h('h1', { class: 'hero', html: 'Any video you can <em>describe.</em>' }),
     h('p', { class: 'lede' }, 'Say what you want to make. Your agent picks the tools and builds it while you watch, and FilmCraft holds the timeline.'),
     composer({
-      key: 'home', big: true, footLeft: picker,
+      key: 'home', big: true, footLeft: [picker, bpick],
       placeholder: 'Describe your video, or pick a kind of video below. Drop footage, a script or a screenshot here.',
-      onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, prompt: text, attachments: files })
+      onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, brand, prompt: text, attachments: files })
     }),
     recentSection(),
     categoryTiles(),
@@ -367,7 +380,7 @@ function formatCard(f) {
         h('button', { class: 'copy-btn', onclick: () => copyText(f.ask) }, 'Copy')),
       h('q', null, f.ask)),
     h('div', { class: 'factions' },
-      h('button', { class: 'btn small', title: 'Start a project with this sentence', onclick: () => startProject({ name: f.name, engine: state.env?.settings?.engine || 'claude', format: f.id, prompt: f.ask }) }, 'Use this sentence'),
+      h('button', { class: 'btn small', title: 'Start a project with this sentence', onclick: () => startProject({ name: f.name, engine: state.env?.settings?.engine || 'claude', brand: homeBrand(), format: f.id, prompt: f.ask }) }, 'Use this sentence'),
       h('button', { class: 'btn small primary', onclick: () => openInterview(f) }, 'Answer the questions →')),
     h('div', { class: 'fchat' }, h('button', { class: 'chat-link', onclick: () => openGuide(guideDraftFor(f), f.name) }, '? Chat about this video')));
 }
@@ -405,6 +418,7 @@ function openInterview(f) {
   const qs = window.SVEBrief.parse(f.brief);
   const answers = {};
   let engine = state.env?.settings?.engine || 'claude';
+  let brand = homeBrand();
   const overlay = $('#overlay');
   const preview = h('pre');
   const update = () => { preview.textContent = window.SVEBrief.fill(f.brief, qs, answers); };
@@ -449,18 +463,21 @@ function openInterview(f) {
     if (miss.length) { toast(`Please fill in: ${miss.map(m => m.label).join(', ')}`); return; }
     const prompt = window.SVEBrief.fill(f.brief, qs, answers);
     close();
-    startProject({ name: f.name, engine, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
+    startProject({ name: f.name, engine, brand, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
   };
   let picker;
   const onPick = id => { engine = id; const next = agentPicker({ value: id, onChange: onPick }); picker.replaceWith(next); picker = next; };
   picker = agentPicker({ value: engine, onChange: onPick });
+  let bpick;
+  const onBrand = uid => { brand = uid; const next = brandPicker({ value: uid, onChange: onBrand }); bpick.replaceWith(next); bpick = next; };
+  bpick = brandPicker({ value: brand, onChange: onBrand });
   const sheet = h('div', { class: 'sheet', role: 'dialog' },
     h('div', { class: 'sheet-top' },
       h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
       h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,
-    h('div', { class: 'sheet-foot' }, picker, h('span', { class: 'grow' }),
+    h('div', { class: 'sheet-foot' }, picker, bpick, h('span', { class: 'grow' }),
       h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
       h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →')));
   overlay.innerHTML = '';
@@ -473,14 +490,14 @@ function openInterview(f) {
 /* ---------- projects ---------- */
 async function newBlankProject() {
   const engine = state.env?.settings?.engine || 'claude';
-  const p = await api.projects.create({ name: 'Untitled', engine });
+  const p = await api.projects.create({ name: 'Untitled', engine, brand: homeBrand() || null });
   await refreshProjects();
   go({ view: 'project', id: p.id });
 }
 
-async function startProject({ name, engine, format, prompt, attachments }) {
+async function startProject({ name, engine, format, brand, prompt, attachments }) {
   if (!agentInfo(engine).installed) { go({ view: 'settings' }); toast(`${agentInfo(engine).name} is not installed yet.`); return; }
-  const p = await api.projects.create({ name, engine, format });
+  const p = await api.projects.create({ name, engine, format, brand: brand || null });
   await refreshProjects();
   go({ view: 'project', id: p.id });
   await sendTurn(p.id, prompt, attachments || []);
@@ -566,6 +583,15 @@ function viewProject(id) {
       render();
     }
   });
+  const bpick = brandPicker({
+    value: project.brand || '', onChange: async uid => {
+      if (uid === (project.brand || '')) return;
+      await api.projects.update(id, { brand: uid || null });
+      await refreshProjects();
+      toast(uid ? `From the next message, the agent uses “${brandByUid(uid)?.name}”.` : 'From the next message, the agent chooses the look.');
+      render();
+    }
+  });
   const left = h('section', { class: 'ws-left' },
     h('div', { class: 'ws-head' },
       h('button', { class: 'crumb', onclick: () => go({ view: 'home' }) }, 'Home /'), title, h('span', { class: 'grow' }),
@@ -581,7 +607,7 @@ function viewProject(id) {
       placeholder: busy ? 'The agent is working…' : 'Ask for a change, or say what to make next.',
       onSubmit: (text, files) => sendTurn(id, text, files),
       onStop: () => api.agent.stop(id),
-      footLeft: picker
+      footLeft: [picker, bpick]
     })));
   const right = h('section', { class: 'ws-right', id: 'preview' });
   const ws = h('div', { class: 'ws' }, left, right);
@@ -1035,7 +1061,7 @@ function updateSection() {
   api.onNav(r => go(r));
   $('#guideNav')?.addEventListener('click', () => guide.open ? closeGuide() : openGuide());
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && guide.open && !$('#overlay:not(.hidden)')) closeGuide(); });
-  await Promise.all([refreshEnv(), refreshProjects()]);
+  await Promise.all([refreshEnv(), refreshProjects(), refreshBrands()]);
   const running = await api.agent.running();
   running.forEach(id => state.busy.add(id));
   render();

@@ -45,13 +45,13 @@ function list() {
   return out.sort((a, b) => (b.updated || 0) - (a.updated || 0));
 }
 
-function create({ name, engine, format }) {
+function create({ name, engine, format, brand }) {
   let base = slugify(name);
   let dir = path.join(root, base);
   for (let i = 2; fs.existsSync(dir); i++) dir = path.join(root, `${base} ${i}`);
   for (const sub of ['media', 'work', 'exports', '.sve']) fs.mkdirSync(path.join(dir, sub), { recursive: true });
   const now = Date.now();
-  const meta = { id: path.basename(dir), name: path.basename(dir), engine: engine || 'claude', format: format || null, session: null, created: now, updated: now };
+  const meta = { id: path.basename(dir), name: path.basename(dir), engine: engine || 'claude', format: format || null, brand: brand || null, session: null, created: now, updated: now };
   writeMeta(dir, meta);
   return { ...meta, dir };
 }

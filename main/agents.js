@@ -210,7 +210,7 @@ function openTerminal(command) {
   });
 }
 
-function systemPrompt({ projectDir, toolkitDir, filmcraft }) {
+function systemPrompt({ projectDir, toolkitDir, filmcraft, brand }) {
   const lines = [
     'You are the agent inside Scale Video Editor, a desktop app where a person chats with you while a video is made.',
     `The project folder is: ${projectDir}`,
@@ -222,11 +222,14 @@ function systemPrompt({ projectDir, toolkitDir, filmcraft }) {
     toolkitDir
       ? `The Scale Video Toolkit is installed at ${toolkitDir}. Read its CLAUDE.md first: it says which tool to use for each kind of video.`
       : 'The Scale Video Toolkit is not installed. Use the tools you have.',
+    brand
+      ? `Brand: make this video in the "${brand.name}" brand. Read ${brand.file} in the project folder first and use its colors, fonts, shapes and rules for every title, lower third, caption, chart and end card${brand.logo ? `. The logo is ${brand.logo}: use it as it is` : ''}. Do not add colors or fonts the guide does not name. If a font is not installed, use the closest free match and say which.`
+      : null,
     'Rules: do not play sound out loud, do not open new windows, do not publish or upload anything, and do not run anything that costs money without asking first.',
     'Look at frames of anything you render before you call it done, and say plainly what you did not check.',
     'Keep replies short. The person sees your messages in a chat panel beside the preview.'
   ];
-  return lines.join('\n');
+  return lines.filter(Boolean).join('\n');
 }
 
 function mcpLauncher(ctx) {

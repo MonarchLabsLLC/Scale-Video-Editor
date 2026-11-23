@@ -11,6 +11,7 @@ const projects = require('./projects');
 const updater = require('./updater');
 const guide = require('./guide');
 const toolkit = require('./toolkit');
+const brands = require('./brands');
 
 app.setName('Scale Video Editor');
 const APP_ICON = path.join(__dirname, '..', 'renderer', 'assets', 'app-icon.png');
@@ -35,7 +36,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
-const DEFAULT_SETTINGS = { engine: 'claude', model: '', access: 'standard', toolkitDir: '' };
+const DEFAULT_SETTINGS = { engine: 'claude', model: '', access: 'standard', toolkitDir: '', brand: '' };
 
 function readSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) }; } catch { return { ...DEFAULT_SETTINGS }; }
@@ -130,7 +131,95 @@ async function takeSnapshots() {
   await js("window.__sve.go({ view: 'setup' })"); await wait(300); await shot('4c-setup');
   await js("window.__sve.go({ view: 'settings' })"); await wait(300); await js("document.querySelectorAll('*').forEach(e => { if (e.scrollTop) e.scrollTop = 0; })"); await shot('5-settings');
   await js("window.__sve.go({ view: 'filmcraft' })"); await shot('6-filmcraft');
+  // Brand Guides. SVE_SNAPSHOT_BRANDS="site.com,https://link/DESIGN.md" adds those first (needs the network).
+  for (const link of (process.env.SVE_SNAPSHOT_BRANDS || '').split(',').filter(Boolean)) {
+    try { await importBrandUrl(link); } catch (err) { console.error('brand', link, err.message); }
+  }
+  await js("refreshBrands().then(() => window.__sve.go({ view: 'brands' }))"); await wait(400); await shot('7-brands');
+  const firstBrand = brands.list()[0];
+  if (firstBrand) {
+    await js(`window.__sve.go({ view: 'brand', id: ${JSON.stringify(firstBrand.id)} })`); await wait(800); await shot('7b-brand');
+    await js("document.querySelector('.bfull')?.setAttribute('open', ''); document.querySelector('.bfull')?.scrollIntoView()"); await wait(300); await shot('7c-brand-guide');
+    await js(`window.__sve.state.homeBrand = ${JSON.stringify(firstBrand.uid)}; window.__sve.go({ view: 'home' })`); await wait(300);
+    await js("document.querySelector('.brand-pick .mini-select')?.click()"); await wait(300); await shot('7d-home-brand');
+  }
   app.exit(0);
+}
+
+/* ---------- brand guides from a link ---------- */
+async function fetchLimited(url, max, accept) {
+  const res = await net.fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) ScaleVideoEditor', accept: accept || '*/*' }, redirect: 'follow' });
+  if (!res.ok) throw new Error(`The link answered ${res.status}.`);
+  const len = Number(res.headers.get('content-length') || 0);
+  if (len > max) throw new Error('That file is too large.');
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > max) throw new Error('That file is too large.');
+  return { buf, type: (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase() };
+}
+
+async function importBrandUrl(input) {
+  const link = brands.classifyUrl(input);
+  if (link.kind === 'doc') {
+    let got;
+    try { got = await fetchLimited(link.url, 4 * 1024 * 1024, 'text/markdown, text/plain, */*'); }
+    catch { throw new Error(link.page.includes('getdesign.md') ? 'We could not get that design from getdesign.md. Download its DESIGN.md and add the file instead.' : 'We could not get that file. Download it and add the file instead.'); }
+    if (/html/.test(got.type)) throw new Error('That link opens a web page, not a file. Download the DESIGN.md and add the file instead.');
+    return brands.saveText({ name: link.name || '', text: got.buf.toString('utf8'), source: { kind: 'link', label: link.page } });
+  }
+  if (link.kind === 'pdf') {
+    const { buf } = await fetchLimited(link.url, 20 * 1024 * 1024);
+    const tmp = path.join(app.getPath('temp'), `sve-brand-${Date.now()}.pdf`);
+    fs.writeFileSync(tmp, buf);
+    try {
+      const text = await brands.textFromFile(tmp);
+      return brands.saveText({ name: '', text, source: { kind: 'link', label: link.page } });
+    } finally { fs.rmSync(tmp, { force: true }); }
+  }
+  // A website: read its look in a hidden window, then write a DESIGN.md from it.
+  const scan = await scanSite(link.url);
+  let logo = null;
+  try {
+    if (scan.logo && /^https:\/\//.test(scan.logo)) {
+      const { buf, type } = await fetchLimited(scan.logo, 2 * 1024 * 1024, 'image/*');
+      if (brands.IMAGE_EXT[type]) logo = { data: buf, ext: brands.IMAGE_EXT[type] };
+    }
+    if (!logo && scan.svg) logo = { data: Buffer.from(scan.svg.includes('xmlns') ? scan.svg : scan.svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')), ext: '.svg' };
+    if (!logo && scan.icon && /^https:\/\//.test(scan.icon)) {
+      const { buf, type } = await fetchLimited(scan.icon, 1024 * 1024, 'image/*');
+      if (brands.IMAGE_EXT[type] && type !== 'image/x-icon' && type !== 'image/vnd.microsoft.icon') logo = { data: buf, ext: brands.IMAGE_EXT[type] };
+    }
+  } catch { logo = null; }
+  scan.logoSaved = !!logo;
+  const name = (scan.siteName || scan.title || scan.host || 'Brand').split(/\s+[|\-–—:]\s+/)[0].slice(0, 60);
+  return brands.saveText({ name, text: brands.designFromScan(scan), source: { kind: 'site', label: scan.url }, logo });
+}
+
+// Opens the site in a hidden window with its own throwaway session and no access to this computer,
+// lets it settle, reads colors, fonts and the logo, and closes it. Nothing is shown on screen.
+function scanSite(url) {
+  return new Promise((resolve, reject) => {
+    const w = new BrowserWindow({
+      show: false, width: 1440, height: 900,
+      webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, partition: 'sve-brand-scan', backgroundThrottling: false, webSecurity: true }
+    });
+    w.webContents.setAudioMuted(true);
+    w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    w.webContents.session.on('will-download', e => e.preventDefault());
+    w.webContents.setUserAgent(w.webContents.getUserAgent().replace(/\s(Electron|scale-video-editor|Scale Video Editor)\/\S+/gi, ''));
+    let done = false;
+    const finish = (err, val) => { if (done) return; done = true; clearTimeout(timer); if (!w.isDestroyed()) w.destroy(); err ? reject(err) : resolve(val); };
+    const timer = setTimeout(() => finish(new Error('That website took too long to open. Try again, or add a design guide file instead.')), 30000);
+    w.webContents.on('did-fail-load', (_e, code, desc, _u, isMain) => { if (isMain && code !== -3) finish(new Error(`We could not open that website (${desc}). Check the address.`)); });
+    w.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        if (done) return;
+        w.webContents.executeJavaScript(brands.SCAN_SCRIPT, true)
+          .then(r => finish(null, r))
+          .catch(() => finish(new Error('We opened the website but could not read its styles.')));
+      }, 2500);
+    });
+    w.loadURL(url).catch(() => {});
+  });
 }
 
 function registerIpc() {
@@ -198,7 +287,7 @@ function registerIpc() {
   ipcMain.handle('projects:get', (_e, id) => projects.get(id));
   ipcMain.handle('projects:update', (_e, id, patch) => {
     const allowed = {};
-    for (const k of ['engine', 'model']) if (k in patch) allowed[k] = patch[k];
+    for (const k of ['engine', 'model', 'brand']) if (k in patch) allowed[k] = patch[k];
     if ('engine' in patch) allowed.session = null; // a session belongs to one agent
     return projects.update(id, allowed);
   });
@@ -219,6 +308,22 @@ function registerIpc() {
     return true;
   });
 
+  /* ---------- brand guides ---------- */
+  ipcMain.handle('brands:list', () => brands.list());
+  ipcMain.handle('brands:get', (_e, id) => brands.get(id));
+  ipcMain.handle('brands:pickFile', async () => {
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Add a design guide', properties: ['openFile'],
+      filters: [{ name: 'Design guides', extensions: brands.FILE_TYPES.map(e => e.slice(1)) }]
+    });
+    return r.canceled ? null : r.filePaths[0];
+  });
+  ipcMain.handle('brands:importFile', (_e, file) => brands.importFile(String(file)));
+  ipcMain.handle('brands:importUrl', (_e, input) => importBrandUrl(input));
+  ipcMain.handle('brands:rename', (_e, id, name) => brands.rename(id, name));
+  ipcMain.handle('brands:duplicate', (_e, id) => brands.duplicate(id));
+  ipcMain.handle('brands:trash', async (_e, id) => { await shell.trashItem(brands.resolve(id)); return true; });
+
   ipcMain.handle('agent:send', async (_e, { projectId, prompt, attachments }) => {
     if (running.has(projectId)) throw new Error('The agent is still working on this project.');
     const project = projects.get(projectId);
@@ -237,7 +342,8 @@ function registerIpc() {
       resume: project.session,
       toolkitDir: toolkitDir(),
       filmcraft: fcStatus.bridge,
-      mcpScript: mcpScript()
+      mcpScript: mcpScript(),
+      brand: project.brand ? brands.copyInto(project.brand, project.dir) : null
     };
     const handle = agents.runTurn(ctx, full, ev => {
       if (ev.kind === 'session' && ev.id && ev.id !== project.session) {
@@ -312,6 +418,7 @@ app.whenReady().then(() => {
   app.setAboutPanelOptions({ applicationName: 'Scale Video Editor', applicationVersion: app.getVersion(), iconPath: APP_ICON });
   loadShellPath();
   projects.setRoot(process.env.SVE_PROJECTS_ROOT || path.join(app.getPath('documents'), 'Scale Video Editor'));
+  brands.setRoot(path.join(projects.getRoot(), 'Brand Guides'));
   protocol.handle('sve-media', req => {
     const u = new URL(req.url);
     let p = decodeURIComponent(u.pathname);
