@@ -40,6 +40,10 @@ The editor never modifies FilmCraft. It uses only FilmCraft's public CLI, contro
 
 The FilmCraft control token is kept in `~/.config/filmcraft/control.env` (owner-only). It is passed to FilmCraft and its CLI through the environment only. It never appears in an agent's configuration, on a command line or in the window.
 
+### Toolkit Guide
+
+**Toolkit Guide** in the sidebar (or **Chat about this video** on a card) opens a chat that recommends the right kind of video and helps write the request. It is the same guide as on the Scale Plus dashboard, with the same knowledge base. Questions go to a Scale Plus route that holds the chat service's key, so no key is in this app. Set `SVE_GUIDE_URL` to point it at another server for testing.
+
 ### Updates
 
 The editor checks GitHub for a new version every time it starts, and every six hours while it is open. **Settings → Check for updates** (or **Check for Updates…** in the app menu) checks at once. When a new version is out, a card in the sidebar says so: click **Update now**, then **Restart to finish**.

@@ -14,26 +14,19 @@ This is a proposal. Nothing below is built yet except where it says **Done**.
 | Docs | 21 entries: what each tool does, why it is in the kit, what it needs | **A Tools page that checks this computer.** Each tool shows what it does (from the same docs) plus a live status: ready, not installed, or needs a key or account. A **Set it up** button sends your agent a setup prompt for that one tool. The cards' tool pills open the tool's entry. | The website cannot know what you have. The app can, and "what do I still need for this video?" is the real question. |
 | How it works | The four steps, the six production stages, the house rules | **Two small pieces, not a page.** 1) A first-run tour of three screens: describe or pick, watch it build, find the file. 2) While a video is being made, the project shows which stage it is on (voice, picture, music, check, export). The house rules are already in the agent's instructions; Settings gets a short "What every video is held to" list. | People read "how it works" once. Showing the stage while it happens teaches more than a page. |
 | Install | The requirements and one install prompt | **A Setup checklist.** On first start, and in Settings: agent installed and signed in, FilmCraft installed and connected, Scale Video Toolkit installed, optional accounts (for example ElevenLabs for voice). Each line has a **Fix** button that runs the install step through your agent. The sidebar status rows open it. | The app is already installed, so the page becomes "what is still missing", with a button for each gap. |
-| Ask the Toolkit Guide | A chat that recommends the right video and helps write the prompt | **A Guide panel beside every page**, with **Chat about this video** on each card. The open question is what answers it; see below. | Same feature. The answer engine is the decision. |
+| Ask the Toolkit Guide | A chat that recommends the right video and helps write the prompt | **Done (app side).** A Guide panel on the right, opened from the sidebar, from "Not sure what to make?" on Home, and from **Chat about this video** on each card. It uses the same ChatBaser agent and knowledge base as the dashboard, through a Scale Plus route that holds the key. | Same feature, one knowledge base. |
 
 ## Updates
 
 **Done.** The app checks for a new version on every start and every six hours, has **Check for updates** in Settings and in the app menu, updates with one click, and asks you to restart. See the README for how source and release installs differ.
 
-## The Toolkit Guide: one decision for Mike
+## The Toolkit Guide
 
-On the dashboard, the guide is a ChatBaser agent. The ChatBaser key stays on the dashboard's server, and only signed-in Pro Max members can use it. The desktop app is open source and has no sign-in, so it cannot hold that key: anyone could read it from the code.
-
-| Option | How it works | Cost and risk |
-|---|---|---|
-| **A. Your own agent answers (recommended)** | The guide panel runs the person's own Claude Code or Codex in a read-only "guide" mode, with the toolkit's knowledge base shipped inside the app. It can also start the project for you when you say yes. | No key, no server, no cost to Scale.gg. Uses the person's own plan. Answers are as good as their agent. |
-| B. ChatBaser through a new public endpoint | A new scale.gg endpoint, with no sign-in, holds the key and limits how many messages each computer can send. | Scale.gg pays for every message from every user of a free, open-source app. Needs server work, rate limiting and abuse checks. |
-| C. ChatBaser with Scale Plus sign-in | The app signs in to Scale Plus, and the dashboard's existing guide route answers. | Adds sign-in, which you said to leave out for now. Only Pro Max members could use the guide. |
+Decided: the editor uses the dashboard's ChatBaser agent (`747b7256-…`), so Mike keeps one knowledge base. The key cannot ship in open-source code, so the app sends questions to `POST https://app.scaleplus.gg/api/public/video-editor/guide`. That route holds an editor-only key (`CHATBASER_VIDEO_EDITOR_API_KEY` in Vercel), has no sign-in, and limits how many messages each computer can send.
 
 ## Suggested order
 
-1. Toolkit Guide (after the decision above).
-2. Setup checklist (replaces Install and makes first start smooth).
-3. Tools page with live status (replaces Docs).
-4. First-run tour and the stage strip in projects (replaces How it works).
-5. My prompts.
+1. Setup checklist (replaces Install and makes first start smooth).
+2. Tools page with live status (replaces Docs).
+3. First-run tour and the stage strip in projects (replaces How it works).
+4. My prompts.

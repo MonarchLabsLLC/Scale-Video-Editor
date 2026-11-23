@@ -9,6 +9,7 @@ const agents = require('./agents');
 const filmcraft = require('./filmcraft');
 const projects = require('./projects');
 const updater = require('./updater');
+const guide = require('./guide');
 
 app.setName('Scale Video Editor');
 const APP_ICON = path.join(__dirname, '..', 'renderer', 'assets', 'app-icon.png');
@@ -113,6 +114,7 @@ async function takeSnapshots() {
   await shot('1-home');
   await js("window.__sve.go({ view: 'formats' })"); await shot('2-formats');
   await js("window.__sve.state.cat = 'marketing'; window.__sve.go({ view: 'formats' })"); await shot('2b-marketing'); await js("window.__sve.state.cat = 'all'");
+  if (process.env.SVE_GUIDE_URL) { await js("window.__sve.go({ view: 'home' }); window.__sve.guideSend('I have a script. What can I make with it?')"); await wait(1500); await shot('2c-guide'); await js("window.__sve.closeGuide(); localStorage.removeItem('sve-guide:v1')"); }
   await js("window.__sve.go({ view: 'home' }); window.__sve.openInterview(window.SVE_FORMATS.find(f => f.id === 'short'))"); await shot('3-interview');
   await js("document.querySelector('#overlay').click()");
   const first = projects.list()[0];
@@ -123,6 +125,7 @@ async function takeSnapshots() {
 }
 
 function registerIpc() {
+  ipcMain.handle('guide:ask', (_e, payload) => guide.ask(payload, app.getVersion()));
   ipcMain.handle('update:get', () => updater.get());
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:apply', () => updater.apply());

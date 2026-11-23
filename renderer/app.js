@@ -320,6 +320,7 @@ function viewHome() {
 function categoryTiles() {
   return h('section', null,
     sectionHead('Start here', 'What do you want to make?', 'Pick the closest fit. Each one shows what you hand over, what comes back, and a sentence that gets it started.'),
+    h('button', { class: 'chat-link inline', onclick: () => openGuide() }, '? Not sure what to make? Ask the Toolkit Guide'),
     h('div', { class: 'cat-tiles' }, CATS.map(c => h('button', {
       class: 'cat-tile', style: toneStyle(c.pastel),
       onclick: () => { state.cat = c.id; go({ view: 'formats' }); }
@@ -353,7 +354,8 @@ function formatCard(f) {
       h('q', null, f.ask)),
     h('div', { class: 'factions' },
       h('button', { class: 'btn small', title: 'Start a project with this sentence', onclick: () => startProject({ name: f.name, engine: state.env?.settings?.engine || 'claude', format: f.id, prompt: f.ask }) }, 'Use this sentence'),
-      h('button', { class: 'btn small primary', onclick: () => openInterview(f) }, 'Answer the questions →')));
+      h('button', { class: 'btn small primary', onclick: () => openInterview(f) }, 'Answer the questions →')),
+    h('div', { class: 'fchat' }, h('button', { class: 'chat-link', onclick: () => openGuide(guideDraftFor(f), f.name) }, '? Chat about this video')));
 }
 
 function recentSection() {
@@ -797,7 +799,80 @@ function viewFilmcraft() {
 }
 
 /* ---------- start ---------- */
-window.__sve = { go, openInterview, state };
+window.__sve = { go, openInterview, state, openGuide, guideSend, closeGuide };
+/* ---------- Toolkit Guide ---------- */
+// The same ChatBaser agent as the dashboard's Video Toolkit guide. Questions go through the main
+// process to a Scale Plus route that holds the key; this page never sees it.
+const GUIDE_KEY = 'sve-guide:v1';
+const GUIDE_WELCOME = "Hi, I'm the Toolkit Guide. Tell me what you'd like to make and I'll point you to the best kind of video for it, then help you write the request for your agent. You can also ask me anything about the toolkit.";
+const GUIDE_STARTERS = ['What can the toolkit do?', 'I have a script. What can I make with it?', 'Help me write a request for a Short', 'What can I make without paid accounts?'];
+const GUIDE_SUPPORT = 'https://support.scale.gg/';
+function guideDraftFor(f) { return `Tell me more about the ${f.name}. What is it, what does the finished video look like, and what can it do? Give me some use cases and examples, and tell me what I need to have ready.`; }
+const guide = { open: false, messages: [], sending: false, error: '', draft: '', format: '' };
+try { const saved = JSON.parse(localStorage.getItem(GUIDE_KEY) || 'null'); if (saved && Array.isArray(saved.messages)) guide.messages = saved.messages.slice(-60); } catch {}
+function saveGuide() { try { localStorage.setItem(GUIDE_KEY, JSON.stringify({ messages: guide.messages.slice(-60) })); } catch {} }
+
+function openGuide(draft, format) {
+  guide.open = true;
+  if (draft) { guide.draft = draft; guide.format = format || ''; }
+  drawGuide(true);
+}
+function closeGuide() { guide.open = false; drawGuide(); }
+
+async function guideSend(text) {
+  text = String(text || '').trim();
+  if (!text || guide.sending) return;
+  const conversation = guide.messages.map(({ role, content }) => ({ role, content }));
+  guide.messages.push({ role: 'user', content: text });
+  guide.open = true; guide.sending = true; guide.error = ''; guide.draft = '';
+  const format = guide.format; guide.format = '';
+  drawGuide(true);
+  const res = await api.guide.ask({ message: text, conversation, format });
+  guide.sending = false;
+  if (res.error) guide.error = res.error;
+  else guide.messages.push({ role: 'assistant', content: res.answer, escalate: res.escalate });
+  saveGuide();
+  drawGuide(true);
+}
+
+function drawGuide(focus) {
+  const el = $('#guide');
+  if (!el) return;
+  el.classList.toggle('hidden', !guide.open);
+  document.body.classList.toggle('guide-open', guide.open);
+  $('#guideNav')?.classList.toggle('active', guide.open);
+  if (!guide.open) { el.innerHTML = ''; return; }
+  const box = h('textarea', { rows: 3, placeholder: 'Ask about a kind of video, a tool, or what to make…', maxlength: 4000 });
+  box.value = guide.draft;
+  box.addEventListener('input', () => { guide.draft = box.value; });
+  box.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); guideSend(box.value); } });
+  const list = h('div', { class: 'guide-list' },
+    h('div', { class: 'gmsg bot' }, h('span', { class: 'gav' }, '?'), h('div', { class: 'gbody', html: md(GUIDE_WELCOME) })),
+    guide.messages.length ? null : h('div', { class: 'guide-starters' }, GUIDE_STARTERS.map(q => h('button', { onclick: () => guideSend(q) }, q))),
+    guide.messages.map(m => m.role === 'user'
+      ? h('div', { class: 'gmsg me' }, h('div', { class: 'gbody' }, m.content))
+      : h('div', { class: 'gmsg bot' }, h('span', { class: 'gav' }, '?'),
+        h('div', { class: 'gbody' }, h('div', { html: md(m.content) }),
+          h('div', { class: 'gtools' },
+            h('button', { class: 'copy-btn', onclick: () => copyText(m.content) }, 'Copy'),
+            m.escalate ? h('a', { href: GUIDE_SUPPORT, 'data-ext': '1', class: 'copy-btn' }, 'Contact support') : null)))),
+    guide.sending ? h('div', { class: 'working' }, h('span', { class: 'spin' }), 'The guide is thinking…') : null,
+    guide.error ? h('div', { class: 'err' }, guide.error) : null);
+  el.innerHTML = '';
+  el.append(
+    h('div', { class: 'guide-head' },
+      h('span', { class: 'gav big' }, '?'),
+      h('div', { class: 'grow' }, h('div', { class: 'gname' }, 'Toolkit Guide'), h('div', { class: 'gsub' }, 'Answers from the Scale Video Toolkit knowledge base')),
+      guide.messages.length ? h('button', { class: 'icon-btn', title: 'Start over', onclick: () => { guide.messages = []; guide.error = ''; saveGuide(); drawGuide(true); } }, '↺') : null,
+      h('button', { class: 'icon-btn', title: 'Close', onclick: closeGuide }, '×')),
+    list,
+    h('div', { class: 'guide-compose' }, box,
+      h('div', { class: 'ws-foot' }, h('span', { class: 'gsub' }, 'Enter to send · Shift+Enter for a new line'), h('span', { class: 'grow' }),
+        h('button', { class: 'send', disabled: guide.sending, title: 'Send', onclick: () => guideSend(box.value) }, '↑'))));
+  list.scrollTop = list.scrollHeight;
+  if (focus) box.focus();
+}
+
 /* ---------- updates ---------- */
 const UPDATE_LIVE = ['available', 'downloading', 'ready', 'manual'];
 function updateActions(u, small) {
@@ -835,6 +910,8 @@ function updateSection() {
   api.update.get().then(u => { state.update = u; drawUpdateSlot(); });
   api.update.onState(u => { state.update = u; drawUpdateSlot(); if (state.route.view === 'settings') render(); });
   api.onNav(r => go(r));
+  $('#guideNav')?.addEventListener('click', () => guide.open ? closeGuide() : openGuide());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && guide.open && !$('#overlay:not(.hidden)')) closeGuide(); });
   await Promise.all([refreshEnv(), refreshProjects()]);
   const running = await api.agent.running();
   running.forEach(id => state.busy.add(id));

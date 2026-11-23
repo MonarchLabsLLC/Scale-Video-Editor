@@ -302,3 +302,37 @@ details.prompt-preview pre { white-space: pre-wrap; font-family: var(--mono); fo
 /* Settings and FilmCraft pages: section titles are labels, not page headlines */
 .page.compact .section-head { margin: 36px 0 12px; }
 .page.compact h2.section { font-size: 24px; letter-spacing: -0.03em; }
+
+/* Toolkit Guide panel: docked on the right, over the page */
+.guide { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 92vw; z-index: 40; display: flex; flex-direction: column; background: var(--paper); border-left: 1px solid var(--hair); box-shadow: -24px 0 70px -40px rgba(20, 16, 35, .5); }
+body.guide-open .main { padding-right: 420px; }
+.guide-head { display: flex; align-items: center; gap: 10px; padding: 30px 16px 14px; border-bottom: 1px solid var(--hair); -webkit-app-region: drag; }
+.guide-head > * { -webkit-app-region: no-drag; }
+.guide-head .grow { flex: 1; min-width: 0; }
+.gname { font-weight: 650; letter-spacing: -0.02em; }
+.gsub { font-size: 12px; color: var(--label); }
+.gav { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.gav.big { width: 34px; height: 34px; }
+.icon-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--hair); background: var(--panel); font-size: 15px; }
+.icon-btn:hover { border-color: var(--label); }
+.guide-list { flex: 1; overflow: auto; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.gmsg { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.gmsg.me { justify-content: flex-end; }
+.gmsg.me .gbody { background: var(--ink); color: var(--paper); padding: 9px 13px; border-radius: 18px 18px 4px 18px; max-width: 86%; white-space: pre-wrap; }
+.gmsg.bot .gbody { flex: 1; min-width: 0; }
+.gmsg.bot p { margin: 0 0 8px; } .gmsg.bot p:last-child { margin: 0; }
+.gmsg.bot ul, .gmsg.bot ol { margin: 4px 0 8px; padding-left: 20px; }
+.gmsg.bot a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.gmsg.bot code { font-family: var(--mono); font-size: 12px; background: var(--soft); border: 1px solid var(--hair); padding: 1px 5px; border-radius: 6px; }
+.gmsg.bot pre { font-family: var(--mono); font-size: 12px; background: var(--ink); color: var(--paper); padding: 10px; border-radius: 12px; white-space: pre-wrap; }
+.gtools { display: flex; gap: 6px; margin-top: 8px; }
+.guide-starters { display: flex; flex-direction: column; gap: 6px; padding-left: 38px; }
+.guide-starters button { text-align: left; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--hair); background: var(--panel); font-size: 13px; }
+.guide-starters button:hover { border-color: var(--label); }
+.guide-compose { padding: 12px 14px 14px; border-top: 1px solid var(--hair); }
+.guide-compose textarea { width: 100%; resize: none; border: 1px solid var(--hair); background: var(--panel); border-radius: 14px; padding: 10px 12px; outline: 0; font-size: 14px; line-height: 1.45; }
+.guide-compose textarea:focus { border-color: var(--label); }
+.fchat { display: flex; justify-content: center; border-top: 1px solid var(--hair); background: var(--paper); padding: 12px 20px 14px; }
+.chat-link { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: var(--ink); color: var(--paper); padding: 8px 16px; font-size: 13px; font-weight: 700; }
+.chat-link:hover { opacity: .88; }
+.chat-link.inline { background: none; color: var(--ink); padding: 0; margin: -8px 0 20px; text-decoration: underline; text-underline-offset: 4px; font-weight: 600; }

@@ -5,6 +5,7 @@ const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
 contextBridge.exposeInMainWorld('sve', {
   env: () => invoke('env:get'),
   setSettings: patch => invoke('settings:set', patch),
+  guide: { ask: payload => invoke('guide:ask', payload) },
   update: {
     get: () => invoke('update:get'),
     check: () => invoke('update:check'),
