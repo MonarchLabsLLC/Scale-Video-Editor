@@ -112,6 +112,9 @@ async function takeSnapshots() {
   fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
   await wait(1800);
   await shot('1-home');
+  await js("document.querySelector('.pcard .more-btn')?.click()"); await wait(200); await shot('1b-menu');
+  await js("[...document.querySelectorAll('.pop-menu .menu-item')].find(b => b.textContent.startsWith('Delete'))?.click()"); await wait(200); await shot('1c-delete');
+  await js("document.querySelector('#overlay .sheet-foot .btn:not(.danger)')?.click()");
   await js("window.__sve.go({ view: 'formats' })"); await shot('2-formats');
   await js("window.__sve.state.cat = 'marketing'; window.__sve.go({ view: 'formats' })"); await shot('2b-marketing'); await js("window.__sve.state.cat = 'all'");
   if (process.env.SVE_GUIDE_URL) { await js("window.__sve.go({ view: 'home' }); window.__sve.guideSend('I have a script. What can I make with it?')"); await wait(1500); await shot('2c-guide'); await js("window.__sve.closeGuide(); localStorage.removeItem('sve-guide:v1')"); }
@@ -154,10 +157,22 @@ function registerIpc() {
     if ('engine' in patch) allowed.session = null; // a session belongs to one agent
     return projects.update(id, allowed);
   });
-  ipcMain.handle('projects:rename', (_e, id, name) => projects.rename(id, name));
+  ipcMain.handle('projects:rename', (_e, id, name) => {
+    if (running.has(id)) throw new Error('Wait for the agent to finish before you rename this project.');
+    return projects.rename(id, name);
+  });
+  ipcMain.handle('projects:duplicate', (_e, id) => projects.duplicate(id));
   ipcMain.handle('projects:files', (_e, id) => projects.files(id));
   ipcMain.handle('projects:chat', (_e, id) => projects.readChat(id));
   ipcMain.handle('projects:newChat', (_e, id) => projects.update(id, { session: null }));
+  // Delete = move the whole project folder to the system Trash (recoverable until the Trash is emptied).
+  ipcMain.handle('projects:trash', async (_e, id) => {
+    const p = projects.get(id);
+    const turn = running.get(id);
+    if (turn) { try { turn.stop(); } catch {} running.delete(id); }
+    await shell.trashItem(p.dir);
+    return true;
+  });
 
   ipcMain.handle('agent:send', async (_e, { projectId, prompt, attachments }) => {
     if (running.has(projectId)) throw new Error('The agent is still working on this project.');

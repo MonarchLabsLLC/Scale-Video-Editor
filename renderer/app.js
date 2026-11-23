@@ -176,9 +176,11 @@ function renderSidebar() {
   if (!state.projects.length) list.append(h('div', { class: 'side-empty' }, 'No projects yet.'));
   for (const p of state.projects.slice(0, 40)) {
     const on = state.route.view === 'project' && state.route.id === p.id;
-    list.append(h('button', { class: 'project-item' + (on ? ' active' : ''), onclick: () => go({ view: 'project', id: p.id }) },
+    list.append(h('div', { class: 'project-item' + (on ? ' active' : ''), role: 'button', tabindex: '0', onclick: () => go({ view: 'project', id: p.id }) },
       h('span', { class: 'name' }, p.name),
-      state.busy.has(p.id) ? h('span', { class: 'busy', title: 'Working' }) : h('span', { class: 'age' }, ago(p.updated))
+      state.busy.has(p.id) ? h('span', { class: 'busy', title: 'Working' }) : h('span', { class: 'age' }, ago(p.updated)),
+      moreButton(p),
+      trashButton(p)
     ));
   }
   const fcEl = $('#fcStatus');
@@ -362,7 +364,8 @@ function recentSection() {
   if (!state.projects.length) return null;
   return h('section', null,
     sectionHead('Your projects', 'Pick up where you left off.'),
-    h('div', { class: 'pgrid' }, state.projects.slice(0, 8).map(p => h('button', { class: 'pcard', onclick: () => go({ view: 'project', id: p.id }) },
+    h('div', { class: 'pgrid' }, state.projects.slice(0, 8).map(p => h('div', { class: 'pcard', role: 'button', tabindex: '0', onclick: () => go({ view: 'project', id: p.id }) },
+      h('div', { class: 'card-actions' }, moreButton(p), trashButton(p)),
       h('div', { class: 'thumb' }, p.thumb ? h('img', { src: api.mediaUrl(p.thumb), alt: '' }) : h('img', { class: 'ph', src: 'assets/scale-mark.svg', alt: '' })),
       h('div', { class: 'meta' }, h('div', { class: 'pname' }, p.name), h('div', { class: 'pwhen' }, `${agentInfo(p.engine).name} · edited ${ago(p.updated)} ago`))))));
 }
@@ -800,6 +803,118 @@ function viewFilmcraft() {
 
 /* ---------- start ---------- */
 window.__sve = { go, openInterview, state, openGuide, guideSend, closeGuide };
+/* ---------- project menu (⋯) ---------- */
+function closeMenus() { document.querySelectorAll('.pop-menu').forEach(m => m.remove()); }
+document.addEventListener('pointerdown', e => { if (!e.target.closest('.pop-menu, .more-btn')) closeMenus(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenus(); });
+function moreButton(p) {
+  const btn = h('button', { class: 'more-btn', title: 'More', 'aria-label': `More for ${p.name}`, html: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>' });
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = document.querySelector('.pop-menu');
+    closeMenus();
+    if (open && open.dataset.for === p.id) return;
+    const item = (label, fn, cls) => h('button', { class: 'menu-item' + (cls ? ' ' + cls : ''), onclick: ev => { ev.stopPropagation(); closeMenus(); fn(); } }, label);
+    const m = h('div', { class: 'pop-menu menu', 'data-for': p.id },
+      item('Open', () => go({ view: 'project', id: p.id })),
+      item('Rename…', () => renameDialog(p)),
+      item('Duplicate', () => duplicateProject(p)),
+      item('Show in Finder', () => api.os.reveal(p.dir)),
+      h('div', { class: 'menu-sep' }),
+      item('Delete…', () => confirmDelete(p), 'danger'));
+    document.body.append(m);
+    const r = btn.getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight;
+    m.style.left = Math.max(8, Math.min(r.left, innerWidth - mw - 8)) + 'px';
+    m.style.top = (r.bottom + 6 + mh > innerHeight ? r.top - mh - 6 : r.bottom + 6) + 'px';
+  });
+  return btn;
+}
+function renameDialog(p) {
+  const overlay = $('#overlay');
+  const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; };
+  const input = h('input', { type: 'text', value: p.name, maxlength: 80 });
+  const save = async () => {
+    const name = input.value.trim();
+    if (!name || name === p.name) { close(); return; }
+    try {
+      const next = await api.projects.rename(p.id, name);
+      close();
+      await refreshProjects();
+      if (state.route.view === 'project' && state.route.id === p.id) go({ view: 'project', id: next.id }); else render();
+    } catch (err) { toast(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') close(); });
+  overlay.onclick = e => { if (e.target === overlay) close(); };
+  overlay.innerHTML = '';
+  overlay.append(h('div', { class: 'sheet confirm', role: 'dialog', 'aria-modal': 'true' },
+    h('div', { class: 'confirm-body' }, h('p', { class: 'eyebrow' }, 'Rename project'), h('h2', null, 'A new name'),
+      h('div', { class: 'field' }, input, h('div', { class: 'fh' }, 'The project folder is renamed too.'))),
+    h('div', { class: 'sheet-foot' }, h('span', { class: 'grow' }), h('button', { class: 'btn', onclick: close }, 'Cancel'), h('button', { class: 'btn primary', onclick: save }, 'Rename'))));
+  overlay.classList.remove('hidden');
+  input.focus(); input.select();
+}
+async function duplicateProject(p) {
+  try {
+    const copy = await api.projects.duplicate(p.id);
+    await refreshProjects(); render();
+    toast(`Made “${copy.name}”: the same files, with a new chat.`);
+  } catch (err) { toast(`Could not duplicate: ${String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')}`); }
+}
+
+/* ---------- delete a project ---------- */
+// Hover shows a trash can. Click it for a confirm box, or press and hold it: a ring fills,
+// and the project is deleted when the ring closes. Deleting moves the folder to the Trash.
+const HOLD_MS = 1200;
+function trashButton(p) {
+  const ring = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="16"/><circle class="ring" cx="18" cy="18" r="16"/></svg>';
+  const icon = '<svg class="can" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const btn = h('button', { class: 'trash-btn', title: 'Delete project (click, or press and hold)', 'aria-label': `Delete ${p.name}`, html: ring + icon });
+  let timer = null, started = 0;
+  const reset = () => { clearTimeout(timer); timer = null; btn.classList.remove('holding'); };
+  btn.addEventListener('click', e => e.stopPropagation());
+  btn.addEventListener('pointerdown', e => {
+    e.stopPropagation(); e.preventDefault();
+    started = Date.now(); btn.classList.add('holding');
+    timer = setTimeout(() => { reset(); started = 0; deleteProject(p); }, HOLD_MS);
+  });
+  btn.addEventListener('pointerup', e => {
+    e.stopPropagation();
+    if (!timer) return;
+    const held = Date.now() - started; reset();
+    if (held < 250) confirmDelete(p);
+  });
+  btn.addEventListener('pointerleave', reset);
+  btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); confirmDelete(p); } });
+  return btn;
+}
+function confirmDelete(p) {
+  const overlay = $('#overlay');
+  const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  overlay.onclick = e => { if (e.target === overlay) close(); };
+  const del = h('button', { class: 'btn danger', onclick: async () => { close(); await deleteProject(p); } }, 'Delete project');
+  overlay.innerHTML = '';
+  overlay.append(h('div', { class: 'sheet confirm', role: 'alertdialog', 'aria-modal': 'true' },
+    h('div', { class: 'confirm-body' },
+      h('p', { class: 'eyebrow' }, 'Delete project'),
+      h('h2', null, `Delete “${p.name}”?`),
+      h('p', null, 'All of its work goes with it: the chat, the media you added, the work files and every export. The folder moves to your computer’s Trash, and once the Trash is emptied it cannot be recovered.'),
+      h('p', { class: 'hint' }, 'Tip: press and hold the trash can to delete without this box.')),
+    h('div', { class: 'sheet-foot' }, h('span', { class: 'grow' }),
+      h('button', { class: 'btn', onclick: close }, 'Cancel'), del)));
+  overlay.classList.remove('hidden');
+  del.focus();
+}
+async function deleteProject(p) {
+  try { await api.projects.trash(p.id); }
+  catch (err) { toast(`Could not delete “${p.name}”: ${String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')}`); return; }
+  state.busy.delete(p.id);
+  await refreshProjects();
+  if (state.route.view === 'project' && state.route.id === p.id) go({ view: 'home' }); else render();
+  toast(`Moved “${p.name}” to the Trash.`);
+}
+
 /* ---------- Toolkit Guide ---------- */
 // The same ChatBaser agent as the dashboard's Video Toolkit guide. Questions go through the main
 // process to a Scale Plus route that holds the key; this page never sees it.

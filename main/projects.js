@@ -85,6 +85,21 @@ function rename(id, name) {
   return { ...meta, dir: target };
 }
 
+// A copy of the project's files with a fresh chat: same media, work and exports, new conversation.
+function duplicate(id) {
+  const src = resolve(id);
+  const meta = readMeta(src);
+  const base = slugify(`${meta.name} copy`);
+  let dir = path.join(root, base);
+  for (let i = 2; fs.existsSync(dir); i++) dir = path.join(root, `${base} ${i}`);
+  fs.cpSync(src, dir, { recursive: true, errorOnExist: true });
+  try { fs.rmSync(chatFile(dir), { force: true }); } catch {}
+  const now = Date.now();
+  const next = { ...meta, id: path.basename(dir), name: path.basename(dir), session: null, created: now, updated: now };
+  writeMeta(dir, next);
+  return { ...next, dir };
+}
+
 function appendChat(id, msg) {
   const dir = resolve(id);
   fs.appendFileSync(chatFile(dir), JSON.stringify({ ...msg, at: Date.now() }) + '\n');
@@ -135,4 +150,4 @@ function latestStill(dir) {
   } catch { return null; }
 }
 
-module.exports = { setRoot, getRoot, list, create, get, update, rename, appendChat, readChat, files, resolve };
+module.exports = { setRoot, getRoot, list, create, get, update, rename, duplicate, appendChat, readChat, files, resolve };

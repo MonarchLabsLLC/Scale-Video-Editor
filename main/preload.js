@@ -22,7 +22,9 @@ contextBridge.exposeInMainWorld('sve', {
     rename: (id, name) => invoke('projects:rename', id, name),
     files: id => invoke('projects:files', id),
     chat: id => invoke('projects:chat', id),
-    newChat: id => invoke('projects:newChat', id)
+    newChat: id => invoke('projects:newChat', id),
+    trash: id => invoke('projects:trash', id),
+    duplicate: id => invoke('projects:duplicate', id)
   },
   agent: {
     send: payload => invoke('agent:send', payload),
