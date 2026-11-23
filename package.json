@@ -35,22 +35,47 @@
     "mac": {
       "category": "public.app-category.video",
       "target": [
-        "dmg"
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
       ],
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "artifactName": "Scale-Video-Editor-mac.${ext}",
+      "identity": "-",
+      "hardenedRuntime": false
     },
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.png"
     },
     "linux": {
       "target": [
-        "AppImage"
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "category": "AudioVideo",
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "artifactName": "Scale-Video-Editor-linux.AppImage"
     },
     "publish": [
       {
@@ -59,7 +84,15 @@
         "repo": "Scale-Video-Editor",
         "releaseType": "draft"
       }
-    ]
+    ],
+    "dmg": {
+      "artifactName": "Scale-Video-Editor-mac.dmg"
+    },
+    "nsis": {
+      "artifactName": "Scale-Video-Editor-Setup.exe",
+      "oneClick": true,
+      "perMachine": false
+    }
   },
   "dependencies": {
     "electron-updater": "^6.8.11"

@@ -25,7 +25,34 @@ You also need:
 - At least one agent: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`, then run `claude` and type `/login`) or [Codex](https://developers.openai.com/codex/cli) (`npm install -g @openai/codex`). Cursor, Grok Build, Antigravity and OpenCode also work. Sign in from **Settings → Agents → Connect**.
 - [FilmCraft](https://github.com/storytold/filmcraft/releases/latest): the app **and** its command-line tool `filmcraft-cli`, the same version. The chat works without FilmCraft, but the timeline needs it.
 
-Ready-made `.dmg`, `.exe` and `.AppImage` files will be on the [Releases](https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases) page when a version is tagged. They are not code-signed yet, so macOS and Windows show a warning the first time you open them.
+**Download an installer.** Each [release](https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases/latest) has these files. The links always point to the newest release:
+
+| Computer | File |
+|---|---|
+| Mac (Apple silicon and Intel) | [Scale-Video-Editor-mac.dmg](https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases/latest/download/Scale-Video-Editor-mac.dmg) |
+| Windows 10 or 11 (x64) | [Scale-Video-Editor-Setup.exe](https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases/latest/download/Scale-Video-Editor-Setup.exe) |
+| Linux (x64) | [Scale-Video-Editor-linux.AppImage](https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases/latest/download/Scale-Video-Editor-linux.AppImage) |
+
+You still need an agent and FilmCraft (see the list below). The installer does not include them.
+
+### First open: the installers are not code-signed yet
+
+macOS and Windows show a warning the first time you open the app, because the files are not signed by an identified developer yet. The app is the same code as this repository.
+
+**macOS.** Open the `.dmg` and drag **Scale Video Editor** to **Applications**. The first time you open it, macOS says *"Scale Video Editor" Not Opened: Apple could not verify "Scale Video Editor" is free of malware* (older macOS versions say it *cannot be opened because the developer cannot be verified*). To open it:
+
+1. Click **Done** (not **Move to Trash**).
+2. Open **System Settings → Privacy & Security**.
+3. Scroll down to the message about Scale Video Editor and click **Open Anyway**.
+4. Enter your Mac password, then click **Open Anyway** again.
+
+You do this only once. On macOS 14 or older you can also Control-click the app in Applications, choose **Open**, then click **Open**. If macOS ever says the app *is damaged*, run `xattr -dr com.apple.quarantine "/Applications/Scale Video Editor.app"` in Terminal, then open it again.
+
+**Windows.** When you run `Scale-Video-Editor-Setup.exe`, a blue window says *Windows protected your PC* (Microsoft Defender SmartScreen) and only shows **Don't run**. Click **More info**, check that the app is `Scale-Video-Editor-Setup.exe`, then click **Run anyway**. The installer sets the app up for your user account; you do not need to be an administrator. Your browser can also say the file *isn't commonly downloaded*: choose **Keep** (in Edge: **⋯ → Keep → Show more → Keep anyway**).
+
+**Linux.** Make the file executable, then run it: `chmod +x Scale-Video-Editor-linux.AppImage && ./Scale-Video-Editor-linux.AppImage`. Ubuntu 22.04 and newer also need `sudo apt install libfuse2` once.
+
+**Updates on an unsigned Mac.** macOS installs an update by itself only into a signed app. So the Mac app does not download updates yet: when a new version is out, the sidebar card offers **Download the new version**, which opens the releases page. Windows and Linux download the update in the background and install it on restart.
 
 ## How it works
 
@@ -53,7 +80,7 @@ The FilmCraft control token is kept in `~/.config/filmcraft/control.env` (owner-
 The editor checks GitHub for a new version every time it starts, and every six hours while it is open. **Settings → Check for updates** (or **Check for Updates…** in the app menu) checks at once. When a new version is out, a card in the sidebar says so: click **Update now**, then **Restart to finish**.
 
 - Installed from source (the install prompt): it runs `git pull --ff-only` on `main`, and `npm install` when the dependencies changed. It does not update a copy that has uncommitted changes or is on another branch; it tells you why instead.
-- Installed from a `.dmg`, `.exe` or `.AppImage`: it downloads the new release in the background and installs it on restart. macOS allows this only for a code-signed app, so until the releases are signed the Mac version offers the download page instead.
+- Installed from a `.dmg`, `.exe` or `.AppImage`: it downloads the new release in the background and installs it on restart. macOS allows this only for an app signed with a Developer ID, so until the releases are signed the Mac version does not download the update; it offers the download page instead.
 
 ### Access
 
@@ -73,6 +100,15 @@ npm run dist   # build an installer for this platform into dist/
 ```
 
 On macOS, `npm install` also renames the local Electron copy in `node_modules` to "Scale Video Editor" with the Scale.gg icon (`scripts/brand-dev-app.js`), so the Dock does not say Electron when you run from source.
+
+### Releases
+
+1. Change `"version"` in `package.json` (for example `0.2.0`), merge it to `main`.
+2. Tag that commit and push the tag: `git tag v0.2.0 && git push origin v0.2.0`.
+3. The **Release** workflow (`.github/workflows/release.yml`) builds the Mac `.dmg` and `.zip` (universal), the Windows `.exe` and the Linux `.AppImage`, and attaches them with the `latest*.yml` files the updater reads to a **draft** release.
+4. Open the draft on GitHub, check the files, and click **Publish release**. Until then, the download links above and the in-app updater do not see the new version.
+
+The builds are not code-signed. The Mac app has an ad hoc signature only (`"identity": "-"` in `package.json`), which gives the standard "Open Anyway" warning instead of "is damaged". To sign later: remove `"identity": "-"`, set `"hardenedRuntime": true`, add the Developer ID certificate and notarization secrets to the workflow, and add a Windows signing certificate. Signed Mac builds then update by themselves.
 
 `SVE_SNAPSHOT=<folder> npm start` renders each screen in a hidden window, saves PNGs to the folder, and quits. `SVE_PROJECTS_ROOT=<folder>` uses another projects folder.
 

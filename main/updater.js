@@ -8,14 +8,15 @@
 //    when the folder has uncommitted changes or is on another branch.
 //
 //  - "release": a .dmg, .exe or .AppImage from GitHub Releases. electron-updater downloads the
-//    new version in the background and installs it on restart. macOS only allows this for a
-//    code-signed app; if the update cannot be installed, the editor offers the download page.
+//    new version in the background and installs it on restart. macOS only allows this for an
+//    app signed with a Developer ID. An unsigned Mac copy does not download the update (macOS
+//    would refuse to install it); it says a new version is out and offers the download page.
 //
 // The state goes to the window on every change, so the sidebar and Settings always agree.
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFile } = require('node:child_process');
+const { execFile, spawnSync } = require('node:child_process');
 
 let REPO_DIR = path.join(__dirname, '..');
 const RELEASES_URL = 'https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases/latest';
@@ -23,6 +24,8 @@ const RELEASES_URL = 'https://github.com/MonarchLabsLLC/Scale-Video-Editor/relea
 let app = null;
 let send = () => {};
 let releaseUpdater = null;
+let selfUpdate = null; // can this release copy install updates by itself?
+let injectedUpdater = null;
 let state = { mode: 'none', status: 'idle', current: '', latest: '', behind: 0, message: '', checkedAt: 0 };
 
 function set(patch) {
@@ -76,17 +79,34 @@ async function applySource() {
 
 /* ---------- release installs (electron-updater) ---------- */
 
+// macOS (Squirrel.Mac) installs an update only into an app signed with a Developer ID. An
+// unsigned or ad hoc signed copy would download the whole update and then fail to install it.
+function canSelfUpdate() {
+  if (process.platform !== 'darwin') return true;
+  const bundle = path.resolve(process.execPath, '..', '..', '..');
+  const r = spawnSync('/usr/bin/codesign', ['-dv', '--verbose=2', bundle], { encoding: 'utf8', timeout: 10_000 });
+  return /Authority=Developer ID Application/.test(`${r.stdout || ''}${r.stderr || ''}`);
+}
+
+const shortError = err => {
+  const m = String(err && err.message || err).split('\n')[0];
+  return /code signature|did not pass validation|code requirement/i.test(m) ? 'this copy of the app is not code-signed' : m;
+};
+
 function loadReleaseUpdater() {
   if (releaseUpdater) return releaseUpdater;
-  const { autoUpdater } = require('electron-updater');
-  autoUpdater.autoDownload = true;
+  const autoUpdater = injectedUpdater || require('electron-updater').autoUpdater;
+  if (selfUpdate === null) selfUpdate = canSelfUpdate();
+  autoUpdater.autoDownload = selfUpdate;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on('checking-for-update', () => set({ status: 'checking', message: 'Checking for updates…' }));
   autoUpdater.on('update-not-available', () => set({ status: 'current', message: 'You have the latest version.', checkedAt: Date.now() }));
-  autoUpdater.on('update-available', info => set({ status: 'downloading', latest: info.version, message: `Version ${info.version} is downloading…` }));
+  autoUpdater.on('update-available', info => selfUpdate
+    ? set({ status: 'downloading', latest: info.version, message: `Version ${info.version} is downloading…` })
+    : set({ status: 'manual', latest: info.version, checkedAt: Date.now(), message: `Version ${info.version} is out. This copy cannot install updates by itself, so download the new version from GitHub.` }));
   autoUpdater.on('download-progress', p => set({ status: 'downloading', message: `Downloading version ${state.latest}: ${Math.round(p.percent)}%` }));
   autoUpdater.on('update-downloaded', info => set({ status: 'ready', latest: info.version, message: `Version ${info.version} is ready. Restart the editor to use it.` }));
-  autoUpdater.on('error', err => set({ status: 'manual', message: `The update could not install by itself (${String(err && err.message || err).split('\n')[0]}). Download the new version instead.` }));
+  autoUpdater.on('error', err => set({ status: 'manual', message: `The update could not install by itself (${shortError(err)}). Download the new version instead.` }));
   releaseUpdater = autoUpdater;
   return autoUpdater;
 }
@@ -96,6 +116,8 @@ function loadReleaseUpdater() {
 function init(electronApp, sendToWindow, opts = {}) {
   app = electronApp;
   if (opts.dir) REPO_DIR = opts.dir;
+  if (typeof opts.selfUpdate === 'boolean') selfUpdate = opts.selfUpdate;
+  if (opts.autoUpdater) { injectedUpdater = opts.autoUpdater; releaseUpdater = null; }
   send = sendToWindow;
   state.mode = detectMode();
   state.current = app.getVersion();
@@ -106,7 +128,12 @@ async function check() {
   set({ status: 'checking', message: 'Checking for updates…' });
   try {
     if (state.mode === 'source') return await checkSource().finally(() => set({ checkedAt: Date.now() }));
-    if (state.mode === 'release') { await loadReleaseUpdater().checkForUpdates(); return state; }
+    if (state.mode === 'release') {
+      const result = await loadReleaseUpdater().checkForUpdates();
+      // A failed download is already reported through the 'error' event.
+      if (result && result.downloadPromise) result.downloadPromise.catch(() => {});
+      return state;
+    }
     return set({ status: 'unsupported', message: 'This copy was not installed from GitHub, so it cannot update itself.' });
   } catch (err) {
     return set({ status: 'error', checkedAt: Date.now(), message: `Could not check for updates: ${(err.stderr || err.message || String(err)).split('\n')[0]}` });

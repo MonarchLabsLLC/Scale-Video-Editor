@@ -1,27 +1,114 @@
-# Builds the installers when a version tag (v*) is pushed, and attaches them to a draft
-# GitHub release. Nothing is published until someone reviews and publishes the draft.
+# Builds the installers and attaches them to a DRAFT GitHub release.
+#
+#   Push a tag like v0.2.0 (it must match "version" in package.json). Each platform builds on
+#   its own runner, then one job creates the draft release and uploads every file, so the
+#   three builds never race to create three releases. Nothing is public until someone opens
+#   the draft on GitHub and clicks Publish.
+#
+#   Run it by hand (Actions > Release > Run workflow) to build the installers without a
+#   release: the files are kept as workflow artifacts for 14 days.
+#
+# Files on each release (fixed names, so .../releases/latest/download/<name> always works):
+#   Scale-Video-Editor-mac.dmg          macOS, one universal build for Apple silicon and Intel
+#   Scale-Video-Editor-mac.zip          macOS, used by the in-app updater
+#   Scale-Video-Editor-Setup.exe        Windows installer (NSIS, x64)
+#   Scale-Video-Editor-linux.AppImage   Linux (x64)
+#   latest-mac.yml, latest.yml, latest-linux.yml and *.blockmap   read by electron-updater
+#
+# The builds are not code-signed yet (see "First open" in the README). No signing secrets are
+# used here.
 name: Release
+
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
+    name: Build (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - { name: macOS, os: macos-latest, args: --mac }
+          - { name: Windows, os: windows-latest, args: --win }
+          - { name: Linux, os: ubuntu-latest, args: --linux }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - name: Check the tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$want" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version ($want). Bump the version first."
+            exit 1
+          fi
+
       - run: npm ci
+
+      # The tests use git and bash, so run them on the macOS and Linux runners.
       - run: npm test
-      - run: npx electron-builder --publish always
+        if: runner.os != 'Windows'
+
+      - name: Build installers
+        run: npx electron-builder ${{ matrix.args }} --publish never
+        env:
+          # Unsigned for now: do not look for a signing certificate in the keychain.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.name }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.blockmap
+            dist/latest*.yml
+
+  release:
+    name: Draft GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: out
+          merge-multiple: true
+
+      - name: Create or update the draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -la out
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --draft --verify-tag \
+              --title "Scale Video Editor ${TAG#v}" --generate-notes
+          fi
