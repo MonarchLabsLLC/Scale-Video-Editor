@@ -134,7 +134,8 @@ async function status() {
   const control = readControl();
   const bridge = control ? await portOpen(control.port) : false;
   const cliVersion = await version(cli);
-  const latest = await latestRelease();
+  // Never hold the status for GitHub: wait at most 1.5 s, then use what came back last time.
+  const latest = await Promise.race([latestRelease(), new Promise(r => setTimeout(() => r(latestCache ? latestCache.value : null), 1500))]);
   return {
     installed: Boolean(cli || app),
     cli: Boolean(cli),

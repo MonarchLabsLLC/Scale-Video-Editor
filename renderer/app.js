@@ -147,8 +147,21 @@ async function refreshProjects() {
   state.projects = await api.projects.list();
   renderSidebar();
 }
+// The last FilmCraft and toolkit results are kept on this computer, so the app shows them at
+// once when it starts (also after an update) and checks again quietly in the background.
+const CHECKS_KEY = 'sve-checks:v1';
+function loadChecks() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CHECKS_KEY) || 'null');
+    if (c && c.fc && !state.fc) state.fc = c.fc;
+    if (c && c.kit && !state.kit) state.kit = c.kit;
+  } catch {}
+}
+function saveChecks() {
+  try { localStorage.setItem(CHECKS_KEY, JSON.stringify({ fc: state.fc && state.fc.installed !== undefined ? state.fc : null, kit: state.kit && !state.kit.error ? state.kit : null })); } catch {}
+}
 async function refreshFc() {
-  try { state.fc = await api.filmcraft.status(); } catch { state.fc = null; }
+  try { state.fc = await api.filmcraft.status(); saveChecks(); } catch { if (!state.fc) state.fc = null; }
   renderSidebar();
 }
 
@@ -275,11 +288,11 @@ async function loadModels(engine, refresh) {
 function modelLabel(engine) {
   const c = modelChoice(engine);
   const list = state.models[engine];
-  if (!c.model) return 'Default model';
+  if (!c.model) return 'Model: agent default';
   const m = list?.models.find(x => x.id === c.model);
   const name = m ? m.label : c.model;
   const effort = m && m.efforts.length ? (c.effort || m.defaultEffort) : '';
-  return effort ? `${name} · ${EFFORT_NAMES[effort] || effort}` : name;
+  return effort ? `Model: ${name} · ${EFFORT_NAMES[effort] || effort}` : `Model: ${name}`;
 }
 function ago(t) {
   if (!t) return 'not checked yet';
@@ -1156,12 +1169,17 @@ function updateSection() {
   ];
 }
 
-(async function init() {
+// Start after every script on the page has loaded: brands.js comes after this file, and
+// init needs its functions (refreshBrands). Starting earlier stopped init before the first
+// FilmCraft check, so the app showed FilmCraft as unchecked until Check again.
+window.addEventListener('DOMContentLoaded', async function init() {
   api.update.get().then(u => { state.update = u; drawUpdateSlot(); });
   api.update.onState(u => { state.update = u; drawUpdateSlot(); if (state.route.view === 'settings') render(); });
   api.onNav(r => go(r));
   $('#guideNav')?.addEventListener('click', () => guide.open ? closeGuide() : openGuide());
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && guide.open && !$('#overlay:not(.hidden)')) closeGuide(); });
+  loadChecks();
+  try { renderSidebar(); } catch {}
   await Promise.all([refreshEnv(), refreshProjects(), refreshBrands()]);
   // The main process asks each agent for its newest models at start; redraw when that is done.
   api.agents.onModelsChanged(async () => {
@@ -1178,7 +1196,7 @@ function updateSection() {
     await refreshFc();
     if (before !== JSON.stringify([state.fc?.bridge, state.fc?.installed]) && state.route.view !== 'home') render();
   }, 15000);
-})();
+});
 
 /* ---------- the toolkit on this computer: Tools page and Setup checklist ---------- */
 // Which rows of the toolkit's own check (tools/verify-install.sh) each tool depends on.
@@ -1218,7 +1236,7 @@ async function refreshKit(quiet) {
   if (state.kitBusy) return;
   state.kitBusy = true;
   if (['tools', 'setup'].includes(state.route.view)) render();
-  try { state.kit = await api.toolkit.check(); } catch (err) { state.kit = { found: false, error: String(err.message || err), rows: [] }; }
+  try { state.kit = await api.toolkit.check(); saveChecks(); } catch (err) { if (!state.kit) state.kit = { found: false, error: String(err.message || err), rows: [] }; }
   state.kitBusy = false;
   await refreshEnv();
   if (['tools', 'setup'].includes(state.route.view)) render(); else renderSidebar();
@@ -1455,7 +1473,8 @@ function agentRow(a, s, set) {
   })() : null;
   const sub = !a.installed ? h('div', { style: { fontSize: '13px', marginTop: '4px' } }, 'Install in a terminal: ', h('code', null, a.installHint))
     : a.connected === false ? h('div', { class: 'fh' }, a.loginKind === 'browser' ? `Connect opens ${a.vendor}’s page. Sign in with your ${a.plan} plan and allow access.` : `Connect opens a Terminal window with the sign-in. Use your ${a.plan} account.`)
-    : a.connected ? h('div', { class: 'fh' }, `Uses your own ${a.plan} plan.`)
+    : a.connected ? h('div', null, h('div', { class: 'fh' }, `Uses your own ${a.plan} plan.`),
+      h('div', { class: 'row-gap settings-model' }, h('span', { class: 'fh', style: { margin: 0 } }, 'Model and effort:'), modelPicker({ engine: a.id, up: false })))
     : h('div', { class: 'fh' }, 'Installed. It cannot report whether it is signed in; if a reply asks you to sign in, click Sign in.');
   return h('div', { class: 'agent-row' + (a.connected ? ' is-on' : '') }, agentLogo(a.id),
     h('div', { class: 'grow' }, h('div', { style: { fontWeight: 600 } }, a.name, ' ',
