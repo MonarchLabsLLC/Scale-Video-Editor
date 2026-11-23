@@ -10,6 +10,7 @@ const filmcraft = require('./filmcraft');
 const projects = require('./projects');
 const updater = require('./updater');
 const guide = require('./guide');
+const toolkit = require('./toolkit');
 
 app.setName('Scale Video Editor');
 const APP_ICON = path.join(__dirname, '..', 'renderer', 'assets', 'app-icon.png');
@@ -46,8 +47,10 @@ function writeSettings(s) {
 
 function toolkitDir() {
   const s = readSettings();
+  const d = toolkit.dir(s.toolkitDir);
+  if (d) return d;
   const candidates = [s.toolkitDir, path.join(os.homedir(), 'Scale-Video-Toolkit')].filter(Boolean);
-  return candidates.find(d => fs.existsSync(path.join(d, 'CLAUDE.md'))) || null;
+  return candidates.find(c => fs.existsSync(path.join(c, 'CLAUDE.md'))) || null;
 }
 
 const framesDir = () => path.join(app.getPath('temp'), 'scale-video-editor-frames');
@@ -122,6 +125,9 @@ async function takeSnapshots() {
   await js("document.querySelector('#overlay').click()");
   const first = projects.list()[0];
   if (first) { await js(`window.__sve.go({ view: 'project', id: ${JSON.stringify(first.id)} })`); await wait(800); await shot('4-project'); }
+  await js("window.__sve.refreshKit(true)"); await wait(6000);
+  await js("window.__sve.go({ view: 'tools', tool: 'voice' })"); await wait(600); await shot('4b-tools');
+  await js("window.__sve.go({ view: 'setup' })"); await wait(300); await shot('4c-setup');
   await js("window.__sve.go({ view: 'settings' })"); await shot('5-settings');
   await js("window.__sve.go({ view: 'filmcraft' })"); await shot('6-filmcraft');
   app.exit(0);
@@ -141,6 +147,37 @@ function registerIpc() {
     projectsRoot: projects.getRoot(),
     settings: readSettings()
   }));
+
+  ipcMain.handle('toolkit:find', async () => { await toolkit.find(readSettings().toolkitDir); return toolkitDir(); });
+  ipcMain.handle('toolkit:check', () => toolkit.verify(readSettings().toolkitDir));
+  ipcMain.handle('toolkit:last', () => toolkit.last());
+  ipcMain.handle('toolkit:fix', async (_e, id) => {
+    const code = await toolkit.runFix(id, readSettings().toolkitDir, line => send('toolkit:log', { id, line }));
+    const result = await toolkit.verify(readSettings().toolkitDir);
+    return { code, result };
+  });
+  ipcMain.handle('toolkit:stop', () => toolkit.stopFix());
+  ipcMain.handle('toolkit:choose', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Choose the Scale Video Toolkit folder', properties: ['openDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    const d = r.filePaths[0];
+    if (!fs.existsSync(path.join(d, 'tools', 'verify-install.sh'))) return { ok: false, message: 'That folder is not the Scale Video Toolkit. Choose the folder that has install.sh and a tools folder in it.' };
+    writeSettings({ ...readSettings(), toolkitDir: d });
+    return { ok: true, dir: d };
+  });
+  ipcMain.handle('toolkit:terminal', () => {
+    const d = toolkitDir();
+    if (process.platform === 'darwin') return new Promise(res => require('node:child_process').execFile('open', ['-a', 'Terminal', d || os.homedir()], () => res(true)));
+    return false;
+  });
+  ipcMain.handle('toolkit:openFile', (_e, p) => {
+    const full = path.resolve(String(p).replace(/^~(?=\/)/, os.homedir()));
+    const okDir = path.join(os.homedir(), '.config', 'scale-video-toolkit') + path.sep;
+    if (!full.startsWith(okDir)) return 'Not allowed';
+    if (!fs.existsSync(full)) return 'The file is not there yet. Run the toolkit step "tools" first; it makes the file.';
+    return shell.openPath(full);
+  });
+  ipcMain.handle('clipboard:write', (_e, text) => { require('electron').clipboard.writeText(String(text)); return true; });
 
   ipcMain.handle('settings:set', (_e, patch) => {
     const next = { ...readSettings(), ...patch };

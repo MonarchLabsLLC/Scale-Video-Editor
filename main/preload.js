@@ -13,6 +13,18 @@ contextBridge.exposeInMainWorld('sve', {
     restart: () => invoke('update:restart'),
     onState: fn => { const h = (_e, s) => fn(s); ipcRenderer.on('update:state', h); return () => ipcRenderer.removeListener('update:state', h); }
   },
+  toolkit: {
+    find: () => invoke('toolkit:find'),
+    check: () => invoke('toolkit:check'),
+    last: () => invoke('toolkit:last'),
+    fix: id => invoke('toolkit:fix', id),
+    stop: () => invoke('toolkit:stop'),
+    choose: () => invoke('toolkit:choose'),
+    terminal: () => invoke('toolkit:terminal'),
+    openFile: p => invoke('toolkit:openFile', p),
+    onLog: fn => { const h = (_e, d) => fn(d); ipcRenderer.on('toolkit:log', h); return () => ipcRenderer.removeListener('toolkit:log', h); }
+  },
+  copy: text => invoke('clipboard:write', text),
   onNav: fn => { const h = (_e, r) => fn(r); ipcRenderer.on('nav', h); return () => ipcRenderer.removeListener('nav', h); },
   projects: {
     list: () => invoke('projects:list'),

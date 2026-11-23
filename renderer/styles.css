@@ -370,3 +370,45 @@ body.guide-open .main { padding-right: 420px; }
 .card-actions .trash-btn, .card-actions .more-btn { position: relative; top: auto; right: auto; background: var(--panel); box-shadow: var(--shadow-sm); }
 .pop-menu { position: fixed; bottom: auto; min-width: 200px; z-index: 70; }
 .menu-item.danger { color: var(--bad); }
+
+/* Tools page and Setup checklist */
+.fh { font-size: 12px; color: var(--label); }
+.tools-bar { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; flex-wrap: wrap; }
+.kit-note { padding: 14px 16px; border-radius: 14px; background: var(--soft); border: 1px solid var(--hair); color: var(--muted); margin-bottom: 14px; }
+.kbadge { display: inline-flex; align-items: center; gap: 6px; flex: none; font-family: var(--mono); font-size: 11px; letter-spacing: .3px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--hair); background: var(--panel); color: var(--muted); white-space: nowrap; }
+.kbadge .kdot { width: 7px; height: 7px; border-radius: 50%; background: var(--label); }
+.kbadge.ok .kdot { background: var(--ok); }
+.kbadge.warn .kdot { background: var(--warn); }
+.kbadge.bad .kdot { background: var(--bad); }
+.ktool-list { display: flex; flex-direction: column; gap: 10px; }
+.ktool { border: 1px solid var(--hair); border-radius: 20px; background: var(--panel); }
+.ktool[open] { box-shadow: var(--shadow); }
+.ktool summary { list-style: none; display: flex; align-items: center; gap: 14px; padding: 14px 18px; cursor: pointer; }
+.ktool summary::-webkit-details-marker { display: none; }
+.ktool .tchip { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 17px; flex: none; }
+.ktool .tmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ktool .tname { font-weight: 650; font-size: 15px; }
+.ktool .tkind { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--label); text-transform: uppercase; letter-spacing: 1px; margin-left: 6px; }
+.ktool .tdoes { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.ktool .tchev { color: var(--label); font-size: 20px; transition: transform .15s; }
+.ktool[open] .tchev { transform: rotate(90deg); }
+.ktool .tbody { padding: 0 18px 18px 72px; display: flex; flex-direction: column; gap: 12px; }
+.tdocs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 22px; margin: 0; }
+.tdoc dt { margin-bottom: 4px; color: var(--label); }
+.tdoc dd { margin: 0; line-height: 1.5; color: var(--ink); }
+.tuses, .trows { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tuses .label-sm { margin-right: 4px; color: var(--label); }
+.trow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; margin-right: 10px; }
+button.tool-pill { cursor: pointer; color: inherit; }
+button.tool-pill:hover { border-color: var(--label); }
+.slist { display: flex; flex-direction: column; border: 1px solid var(--hair); border-radius: 18px; background: var(--panel); overflow: hidden; }
+.sline { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-top: 1px solid var(--hair); }
+.sline:first-child { border-top: 0; }
+.sline .kbadge { min-width: 118px; }
+.sline .stitle { font-weight: 600; }
+.sline .row-gap { margin-top: 0; flex: none; }
+.sready { margin-top: 26px; }
+.sready summary { cursor: pointer; font-weight: 650; font-size: 18px; margin-bottom: 12px; }
+.sheet.confirm.wide { width: min(820px, 100%); }
+.fixlog { margin: 12px 0 0; height: 320px; overflow: auto; background: #0e0d1c; color: #d9d6f0; border-radius: 12px; padding: 12px 14px; font-family: var(--mono); font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.sline > .grow, .tools-bar > .grow { flex: 1; min-width: 0; }

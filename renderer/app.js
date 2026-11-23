@@ -165,6 +165,8 @@ function render() {
   else if (v === 'formats') main.append(viewFormats());
   else if (v === 'settings') main.append(viewSettings());
   else if (v === 'filmcraft') main.append(viewFilmcraft());
+  else if (v === 'tools') main.append(viewTools());
+  else if (v === 'setup') main.append(viewSetup());
   else main.append(viewHome());
 }
 
@@ -187,6 +189,12 @@ function renderSidebar() {
   const fc = state.fc;
   fcEl.className = 'status-row ' + (!fc ? '' : fc.bridge ? 'ok' : fc.installed ? 'warn' : 'bad');
   fcEl.querySelector('.sub').textContent = !fc ? '…' : fc.bridge ? 'connected' : fc.installed ? (fc.updateAvailable ? 'update' : 'not connected') : 'not installed';
+  const suEl = $('#setupStatus');
+  if (suEl) {
+    const todo = state.kit || state.env ? setupTodo().length : null;
+    suEl.className = 'status-row ' + (todo == null || !state.kit ? '' : todo ? 'warn' : 'ok');
+    suEl.querySelector('.sub').textContent = !state.kit ? (state.kitBusy ? 'checking' : '…') : todo ? `${todo} to do` : 'ready';
+  }
   const agEl = $('#agentStatus');
   const eng = state.env?.settings?.engine || 'claude';
   const ai = agentInfo(eng);
@@ -349,7 +357,10 @@ function formatCard(f) {
       h('dl', { class: 'fgive' },
         h('div', null, h('dt', { class: 'label-sm' }, 'You give'), h('dd', null, f.give)),
         h('div', null, h('dt', { class: 'label-sm' }, 'You get'), h('dd', null, f.get))),
-      tools.length ? h('div', { class: 'tool-pills' }, tools.map(t => h('span', { class: 'tool-pill', title: t.does }, t.name))) : null),
+      tools.length ? h('div', { class: 'tool-pills' }, (f.tools || []).filter(id => (window.SVE_TOOLS || {})[id]).map(id => {
+        const t = window.SVE_TOOLS[id];
+        return h('button', { class: 'tool-pill', title: t.does, onclick: () => go({ view: 'tools', tool: id }) }, t.name);
+      })) : null),
     h('div', { class: 'fsay' },
       h('div', { class: 'fsay-head' }, h('span', { class: 'label-sm' }, 'Try saying'),
         h('button', { class: 'copy-btn', onclick: () => copyText(f.ask) }, 'Copy')),
@@ -776,7 +787,8 @@ function viewSettings() {
         ? 'Full access: the agent runs any command without asking, with no sandbox. Use it only on a computer you trust with this.'
         : 'Standard: the agent edits files and runs commands in the project, and uses FilmCraft. Codex runs in its workspace sandbox with network on. Claude Code runs with a fixed list of allowed tools.')),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Scale Video Toolkit')),
-    h('div', { class: 'field' }, h('div', null, env.toolkitDir ? `Installed at ${env.toolkitDir}. The agent reads its CLAUDE.md for which tool fits each kind of video.` : 'Not found in your home folder. The agent works without it, with fewer specialist tools.')),
+    h('div', { class: 'field' }, h('div', null, env.toolkitDir ? `Found at ${env.toolkitDir}. The agent reads its CLAUDE.md for which tool fits each kind of video.` : 'Not found on this computer. The agent works without it, with fewer specialist tools.'),
+      h('div', { class: 'row-gap' }, h('button', { class: 'btn small', onclick: () => go({ view: 'setup' }) }, 'Open Setup'), h('button', { class: 'btn small ghost', onclick: () => go({ view: 'tools' }) }, 'See the tools'))),
     updateSection(),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Projects folder')),
     h('div', { class: 'field' }, h('div', null, env.projectsRoot), h('div', { class: 'fh' }, 'Each project is a normal folder with media, work and exports inside.')),
@@ -802,7 +814,7 @@ function viewFilmcraft() {
 }
 
 /* ---------- start ---------- */
-window.__sve = { go, openInterview, state, openGuide, guideSend, closeGuide };
+window.__sve = { go, openInterview, state, openGuide, guideSend, closeGuide, refreshKit: q => refreshKit(q) };
 /* ---------- project menu (⋯) ---------- */
 function closeMenus() { document.querySelectorAll('.pop-menu').forEach(m => m.remove()); }
 document.addEventListener('pointerdown', e => { if (!e.target.closest('.pop-menu, .more-btn')) closeMenus(); });
@@ -1031,6 +1043,7 @@ function updateSection() {
   const running = await api.agent.running();
   running.forEach(id => state.busy.add(id));
   render();
+  setTimeout(() => refreshKit(true), 1500);
   refreshFc().then(() => { if (['home', 'filmcraft'].includes(state.route.view) || state.route.view === 'project') render(); });
   setInterval(async () => {
     const before = JSON.stringify([state.fc?.bridge, state.fc?.installed]);
@@ -1038,3 +1051,227 @@ function updateSection() {
     if (before !== JSON.stringify([state.fc?.bridge, state.fc?.installed]) && state.route.view !== 'home') render();
   }, 15000);
 })();
+
+/* ---------- the toolkit on this computer: Tools page and Setup checklist ---------- */
+// Which rows of the toolkit's own check (tools/verify-install.sh) each tool depends on.
+const TOOL_CHECKS = {
+  hyperframes: ['skill: hyperframes', 'HyperFrames command'],
+  atlas: ['3D Style Atlas data', 'Google Chrome'],
+  oma: ['skill: one-minute-animation'],
+  stickman: ['skill: stickman-vsl-director'],
+  demo: ['skill: saas-demo-commercial'],
+  huashu: ['Huashu Motion'],
+  shotcraft: ['skill: video-shotcraft'],
+  herk: ['Herk Edit Kit'],
+  cuts: ['skill: perfect-cuts'],
+  relight: ['skill: re-light', 'fal.ai key (GenMedia)'],
+  filmcraft: ['FilmCraft command-line tool', 'FilmCraft app', 'FilmCraft app and tool versions'],
+  voice: ['my-voice (voiceover command)', 'ElevenLabs key (voiceover)', 'Your ElevenLabs voice ID'],
+  presenter: ['GenMedia command-line tool', 'fal.ai key (GenMedia)'],
+  transcribe: ['skill: transcribe', 'WhisperX (word timings)'],
+  cutpoints: ['cut-points runs'],
+  genmedia: ['GenMedia command-line tool'],
+  earshot: ['Earshot'],
+  sfx: ['Sound effect set'],
+  watch: ['skill: watch-video'],
+  ytdlp: ['skill: yt-dlp-superpowers', 'yt-dlp'],
+  router: ['skill: media-superpowers']
+};
+const KIT_URL = 'https://app.scaleplus.gg/pro-max/video-toolkit?view=install';
+const BADGE = {
+  ready: ['Ready', 'ok'], missing: ['Not installed', 'bad'], optional: ['Not installed', 'warn'],
+  key: ['Needs a key', 'warn'], mismatch: ['Versions differ', 'warn'], unknown: ['Not checked', '']
+};
+state.kit = null;      // last result of the toolkit check
+state.kitBusy = false;
+state.toolFilter = 'all';
+
+async function refreshKit(quiet) {
+  if (state.kitBusy) return;
+  state.kitBusy = true;
+  if (['tools', 'setup'].includes(state.route.view)) render();
+  try { state.kit = await api.toolkit.check(); } catch (err) { state.kit = { found: false, error: String(err.message || err), rows: [] }; }
+  state.kitBusy = false;
+  await refreshEnv();
+  if (['tools', 'setup'].includes(state.route.view)) render(); else renderSidebar();
+  if (!quiet) toast('Checked this computer again.');
+}
+const kitRow = part => (state.kit?.rows || []).find(r => r.part === part);
+
+function toolStatus(id) {
+  const rows = (TOOL_CHECKS[id] || []).map(kitRow).filter(Boolean);
+  if (!rows.length) return { status: 'unknown', rows };
+  if (rows.some(r => r.status === 'missing')) return { status: 'missing', rows };
+  if (rows.some(r => r.status === 'optional')) return { status: 'optional', rows };
+  if (rows.some(r => r.status === 'mismatch')) return { status: 'mismatch', rows };
+  if (rows.some(r => r.status === 'nokey')) return { status: 'key', rows };
+  return { status: 'ready', rows };
+}
+function badge(status) {
+  const [text, cls] = BADGE[status] || BADGE.unknown;
+  return h('span', { class: 'kbadge ' + cls }, h('span', { class: 'kdot' }), text);
+}
+// What still needs doing, for the sidebar row and the Setup page.
+function setupTodo() {
+  const env = state.env;
+  const items = [];
+  if (env && !env.agents.some(a => a.installed)) items.push('agent');
+  if (state.fc && !state.fc.installed) items.push('filmcraft');
+  if (state.kit && !state.kit.found) items.push('toolkit');
+  for (const r of state.kit?.rows || []) if (['missing', 'mismatch', 'nokey'].includes(r.status)) items.push(r.part);
+  return items;
+}
+
+/* Tools page */
+function viewTools() {
+  const TOOLS = window.SVE_TOOLS || {};
+  const ids = Object.keys(TOOLS);
+  const known = !!state.kit?.found && !state.kit.unsupported;
+  const shown = ids.filter(id => {
+    if (state.toolFilter === 'all' || !known) return true;
+    const st = toolStatus(id).status;
+    return state.toolFilter === 'ready' ? st === 'ready' : st !== 'ready';
+  });
+  const counts = ids.reduce((a, id) => { const st = toolStatus(id).status; a[st === 'ready' ? 'ready' : 'todo']++; return a; }, { ready: 0, todo: 0 });
+  const filter = known ? h('div', { class: 'seg' },
+    [['all', `All ${ids.length}`], ['ready', `Ready ${counts.ready}`], ['todo', `Needs setup ${counts.todo}`]].map(([v, l]) =>
+      h('button', { class: state.toolFilter === v ? 'on' : '', onclick: () => { state.toolFilter = v; render(); } }, l))) : null;
+  const note = !state.kit ? h('div', { class: 'kit-note' }, state.kitBusy ? 'Checking this computer…' : 'Not checked yet.')
+    : !state.kit.found ? h('div', { class: 'kit-note' }, 'The Scale Video Toolkit was not found on this computer, so the editor cannot say what is ready. ',
+      h('button', { class: 'chat-link', onclick: () => go({ view: 'setup' }) }, 'Set it up →'))
+    : state.kit.unsupported ? h('div', { class: 'kit-note' }, 'The toolkit’s check runs on macOS only. The tools are listed without a status.') : null;
+  const page = h('div', { class: 'page' }, h('div', { class: 'topdrag' }),
+    h('span', { class: 'eyebrow' }, 'Tools'),
+    h('h1', { class: 'hero', style: { fontSize: '56px' } }, 'What’s in the kit, and ', h('em', null, 'what you have.')),
+    h('p', { class: 'lede' }, 'Every tool your agent can use, what it is good at, and whether it is ready on this computer. Open one for the details.'),
+    h('div', { class: 'tools-bar' }, filter, h('span', { class: 'grow' }),
+      state.kit?.checkedAt ? h('span', { class: 'fh' }, `Checked ${ago(state.kit.checkedAt)} ago`) : null,
+      h('button', { class: 'btn small', disabled: state.kitBusy, onclick: () => refreshKit() }, state.kitBusy ? 'Checking…' : 'Check again')),
+    note,
+    h('div', { class: 'ktool-list' }, shown.map((id, i) => toolEntry(id, TOOLS[id], i, known))));
+  if (state.route.tool) setTimeout(() => { const el = document.getElementById('tool-' + state.route.tool); if (el) { el.open = true; el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }, 0);
+  return page;
+}
+
+function toolEntry(id, t, i, known) {
+  const st = toolStatus(id);
+  const fixRow = st.rows.find(r => r.fix && r.status !== 'ok');
+  const keyRow = st.rows.find(r => r.status === 'nokey');
+  const uses = FORMATS.filter(f => (f.tools || []).includes(id));
+  const field = (label, text) => text ? h('div', { class: 'tdoc' }, h('dt', { class: 'label-sm' }, label), h('dd', null, text)) : null;
+  return h('details', { class: 'ktool', id: 'tool-' + id, open: state.route.tool === id },
+    h('summary', null,
+      h('span', { class: 'tchip', style: toneStyle(TONE_CYCLE[i % TONE_CYCLE.length]) }, t.name.slice(0, 1)),
+      h('span', { class: 'tmain' },
+        h('span', { class: 'tname' }, t.name, ' ', h('span', { class: 'tkind' }, t.kind)),
+        h('span', { class: 'tdoes' }, t.does)),
+      known ? badge(st.status) : null,
+      h('span', { class: 'tchev', 'aria-hidden': 'true' }, '›')),
+    h('div', { class: 'tbody' },
+      h('dl', { class: 'tdocs' },
+        field('Why it is in the kit', t.why), field('How it works', t.how), field('Best for', t.best),
+        field('Use it well', t.well), field('Needs', t.needs), field('You get', t.gets), field('Limits', t.limits)),
+      t.by ? h('p', { class: 'fh' }, 'By ', t.by, t.type ? ` · ${t.type}` : '') : null,
+      uses.length ? h('div', { class: 'tuses' }, h('span', { class: 'label-sm' }, 'Used in'),
+        uses.map(f => h('button', { class: 'tool-pill', onclick: () => openInterview(f) }, f.name))) : null,
+      known && st.rows.length ? h('div', { class: 'trows' }, st.rows.map(r => h('div', { class: 'trow' }, badge(r.status === 'ok' ? 'ready' : r.status === 'nokey' ? 'key' : r.status), h('span', null, r.part)))) : null,
+      h('div', { class: 'row-gap' },
+        fixRow ? h('button', { class: 'btn small primary', onclick: () => runKitFix(fixRow) }, 'Set it up') : null,
+        !fixRow && keyRow ? h('button', { class: 'btn small primary', onclick: () => go({ view: 'setup' }) }, 'Add the key in Setup') : null,
+        h('button', { class: 'btn small', onclick: () => openGuide(`Tell me about ${t.name} in the Scale Video Toolkit. When should I use it, and what do I ask my agent for?`, t.name) }, 'Ask the guide'),
+        t.url ? h('button', { class: 'btn small ghost', onclick: () => api.os.openExternal(t.url) }, (t.linkText || 'Learn more') + ' ↗') : null)));
+}
+
+/* Setup checklist */
+function setupLine({ status, title, detail, actions }) {
+  return h('div', { class: 'sline' }, badge(status),
+    h('div', { class: 'grow' }, h('div', { class: 'stitle' }, title), detail ? h('div', { class: 'fh' }, detail) : null),
+    h('div', { class: 'row-gap' }, actions || []));
+}
+function kitLine(r) {
+  const status = r.status === 'ok' ? 'ready' : r.status === 'nokey' ? 'key' : r.status;
+  const actions = [];
+  if (r.fix) actions.push(h('button', { class: 'btn small primary', onclick: () => runKitFix(r) }, r.status === 'mismatch' ? 'Update' : 'Install'));
+  if (r.youRun) actions.push(
+    h('button', { class: 'btn small', onclick: async () => { await api.copy(r.youRun); toast('Command copied. Paste it in Terminal, then paste your key when it asks.', 5000); } }, 'Copy command'),
+    h('button', { class: 'btn small primary', onclick: () => api.toolkit.terminal() }, 'Open Terminal'));
+  if (r.file) actions.push(h('button', { class: 'btn small primary', onclick: async () => { const e = await api.toolkit.openFile(r.file); if (e) toast(e, 5000); } }, 'Open voice.json'));
+  let detail = r.detail.replace(/;?\s*run: .*$/, '').replace(/^you run: .*$/, '');
+  if (r.youRun) detail = 'Add it yourself in Terminal: the command asks for the key and keeps it in your Mac’s Keychain. The editor never sees it.';
+  if (r.file) detail = 'Paste your ElevenLabs voice ID into voice_id in this file and save. A voice ID is not a secret.';
+  return setupLine({ status, title: r.part, detail, actions });
+}
+
+function viewSetup() {
+  const env = state.env || { agents: [] };
+  const fc = state.fc;
+  const kit = state.kit;
+  const agentsIn = env.agents.filter(a => a.installed);
+  const app = [
+    setupLine({ status: agentsIn.length ? 'ready' : 'missing', title: 'A coding agent',
+      detail: agentsIn.length ? agentsIn.map(a => `${a.name} ${a.version || ''}`).join(' · ') : 'Claude Code or Codex does the work. Install one and sign in with your own plan.',
+      actions: [h('button', { class: 'btn small' + (agentsIn.length ? '' : ' primary'), onclick: () => go({ view: 'settings' }) }, agentsIn.length ? 'Agent settings' : 'Set up an agent')] }),
+    setupLine({ status: !fc ? 'unknown' : fc.installed ? 'ready' : 'missing', title: 'FilmCraft',
+      detail: !fc ? 'Checking…' : fc.bridge ? 'Installed and connected.' : fc.installed ? 'Installed. Connect it when you open a project.' : 'The free editor that holds the timeline. The chat works without it.',
+      actions: [h('button', { class: 'btn small', onclick: () => go({ view: 'filmcraft' }) }, fc?.installed ? 'FilmCraft' : 'Get FilmCraft')] }),
+    setupLine({ status: !kit ? 'unknown' : kit.found ? 'ready' : 'missing', title: 'Scale Video Toolkit',
+      detail: !kit ? (state.kitBusy ? 'Looking for it…' : 'Not checked yet.') : kit.found ? `Found at ${String(kit.dir).replace(/^\/Users\/[^/]+/, '~')}.` : 'The specialist tools and skills your agent uses for each kind of video. Without it the agent uses what it has.',
+      actions: [
+        !kit?.found ? h('button', { class: 'btn small primary', onclick: () => api.os.openExternal(KIT_URL) }, 'Get the toolkit ↗') : null,
+        h('button', { class: 'btn small', onclick: async () => {
+          const r = await api.toolkit.choose();
+          if (r.ok) { toast('Toolkit folder saved.'); refreshKit(true); } else if (r.message) toast(r.message, 5000);
+        } }, kit?.found ? 'Change folder…' : 'Choose folder…')] })
+  ];
+  const rows = kit?.rows || [];
+  const need = rows.filter(r => ['missing', 'mismatch', 'nokey'].includes(r.status));
+  const optional = rows.filter(r => r.status === 'optional');
+  const ok = rows.filter(r => r.status === 'ok' || r.status === 'na');
+  const todo = setupTodo().length;
+  return h('div', { class: 'page compact', style: { maxWidth: '960px' } }, h('div', { class: 'topdrag' }),
+    h('span', { class: 'eyebrow' }, 'Setup'),
+    h('h1', { class: 'hero', style: { fontSize: '48px' } }, todo ? 'What this computer still needs.' : 'This computer is ready.'),
+    h('p', { class: 'lede' }, 'Each line is checked on this computer. Install runs the toolkit’s own installer for that one part, and you can watch it work. Keys you add yourself, in Terminal.'),
+    h('div', { class: 'tools-bar' }, h('span', { class: 'grow' }),
+      kit?.checkedAt ? h('span', { class: 'fh' }, `Checked ${ago(kit.checkedAt)} ago`) : null,
+      h('button', { class: 'btn small', disabled: state.kitBusy, onclick: () => refreshKit() }, state.kitBusy ? 'Checking…' : 'Check again')),
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'The editor')),
+    h('div', { class: 'slist' }, app),
+    kit?.unsupported ? h('div', { class: 'kit-note' }, 'The toolkit’s detailed check runs on macOS only.') : null,
+    kit?.error ? h('div', { class: 'kit-note' }, `The toolkit check did not finish: ${kit.error}`) : null,
+    need.length ? [h('div', { class: 'section-head' }, h('h2', { class: 'section' }, `Needs you (${need.length})`)), h('div', { class: 'slist' }, need.map(kitLine))] : null,
+    optional.length ? [h('div', { class: 'section-head' }, h('h2', { class: 'section' }, `Optional (${optional.length})`)),
+      h('p', { class: 'fh', style: { marginTop: '-6px' } }, 'Install these when you want the kind of video they make.'), h('div', { class: 'slist' }, optional.map(kitLine))] : null,
+    ok.length ? h('details', { class: 'sready' }, h('summary', null, `Ready (${ok.length})`), h('div', { class: 'slist' }, ok.map(kitLine))) : null,
+    kit?.summary ? h('p', { class: 'fh', style: { marginTop: '24px' } }, 'Toolkit check: ', kit.summary) : null);
+}
+
+/* Running a fix, with its log in a sheet */
+async function runKitFix(row) {
+  const overlay = $('#overlay');
+  const log = h('pre', { class: 'fixlog' });
+  const status = h('span', { class: 'fh' }, 'Running…');
+  const stopBtn = h('button', { class: 'btn', onclick: () => api.toolkit.stop() }, 'Stop');
+  const closeBtn = h('button', { class: 'btn primary', disabled: true, onclick: () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; render(); } }, 'Close');
+  overlay.innerHTML = '';
+  overlay.onclick = null;
+  overlay.append(h('div', { class: 'sheet confirm wide', role: 'dialog', 'aria-modal': 'true' },
+    h('div', { class: 'confirm-body' }, h('p', { class: 'eyebrow' }, 'Installing'), h('h2', null, row.part),
+      h('p', { class: 'fh' }, 'This runs the toolkit’s installer for one part. It never removes what you have. Large parts can take several minutes.'), log),
+    h('div', { class: 'sheet-foot' }, status, h('span', { class: 'grow' }), stopBtn, closeBtn)));
+  overlay.classList.remove('hidden');
+  const off = api.toolkit.onLog(d => { log.textContent += d.line + '\n'; if (log.textContent.length > 200000) log.textContent = log.textContent.slice(-150000); log.scrollTop = log.scrollHeight; });
+  try {
+    const { code, result } = await api.toolkit.fix(row.fix);
+    state.kit = result;
+    const after = result.rows.find(r => r.part === row.part);
+    status.textContent = after && after.status === 'ok' ? 'Done. It is ready now.' : code === 0 ? 'Finished. The check still shows it as not ready; read the log above.' : `Stopped with code ${code}. Read the log above.`;
+  } catch (err) {
+    status.textContent = String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+  } finally {
+    off();
+    stopBtn.remove();
+    closeBtn.disabled = false;
+    renderSidebar();
+  }
+}
