@@ -198,9 +198,9 @@ function renderSidebar() {
   const agEl = $('#agentStatus');
   const eng = state.env?.settings?.engine || 'claude';
   const ai = agentInfo(eng);
-  agEl.className = 'status-row ' + (!state.env ? '' : ai.installed ? 'ok' : 'bad');
+  agEl.className = 'status-row ' + (!state.env ? '' : !ai.installed ? 'bad' : ai.connected === false ? 'warn' : 'ok');
   agEl.querySelector('.txt').textContent = ai.name || 'Agent';
-  agEl.querySelector('.sub').textContent = !state.env ? '…' : ai.installed ? (ai.version || 'ready') : 'not installed';
+  agEl.querySelector('.sub').textContent = !state.env ? '…' : !ai.installed ? 'not installed' : ai.connected === false ? 'not connected' : ai.connected ? 'connected' : (ai.version || 'ready');
 }
 
 /* ---------- agent picker ---------- */
@@ -208,7 +208,7 @@ function agentPicker({ value, onChange, up = true }) {
   const wrap = h('div', { class: 'agent-pick' });
   const cur = agentInfo(value);
   const btn = h('button', { class: 'mini-select', type: 'button', title: 'Choose the agent' },
-    h('span', { class: 'agent-logo ' + cur.id }, cur.id === 'claude' ? 'C' : 'X'),
+    agentLogo(cur.id),
     h('span', null, cur.name), h('span', { style: { opacity: .5 } }, '▾'));
   wrap.append(btn);
   btn.addEventListener('click', e => {
@@ -223,11 +223,12 @@ function agentPicker({ value, onChange, up = true }) {
           ev.stopPropagation();
           menu.remove();
           if (!a.installed) { go({ view: 'settings' }); toast(`${a.name} is not installed. The Settings page shows how to install it.`); return; }
+          if (a.connected === false) { go({ view: 'settings' }); toast(`Connect ${a.name} first: click Connect and sign in.`); return; }
           onChange(a.id);
         }
       },
-        h('span', { class: 'agent-logo ' + a.id }, a.id === 'claude' ? 'C' : 'X'),
-        h('span', null, h('div', { class: 'mi-name' }, a.name), h('div', { class: 'mi-sub' }, a.installed ? `${a.vendor} · ${a.version || 'installed'}` : 'Not installed')),
+        agentLogo(a.id),
+        h('span', null, h('div', { class: 'mi-name' }, a.name), h('div', { class: 'mi-sub' }, agentStateText(a))),
         a.id === value ? h('span', { class: 'mi-check' }, '✓') : null));
     }
     menu.append(h('div', { class: 'menu-sep' }), h('button', { class: 'menu-item', type: 'button', onclick: () => go({ view: 'settings' }) },
@@ -772,14 +773,9 @@ function viewSettings() {
   return h('div', { class: 'page compact', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
     h('span', { class: 'eyebrow' }, 'Settings'),
     h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'Your agent, your keys.'),
-    h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use, signed in with your own plan.'),
+    h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use. Click Connect, sign in on the agent’s own page, and it uses your own subscription.'),
     h('div', { class: 'section-head', style: { marginTop: '8px' } }, h('h2', { class: 'section' }, 'Agents')),
-    h('div', { class: 'agent-rows' }, env.agents.map(a => h('div', { class: 'agent-row' },
-      h('span', { class: 'agent-logo ' + a.id }, a.id === 'claude' ? 'C' : 'X'),
-      h('div', { class: 'grow' }, h('div', { style: { fontWeight: 600 } }, a.name, ' ', h('span', { style: { color: 'var(--label)', fontWeight: 400 } }, a.installed ? `· ${a.version || 'installed'}` : '· not installed')),
-        a.installed ? h('div', { class: 'fh', style: { fontSize: '12px', color: 'var(--label)' } }, 'Sign in once in a terminal with ', h('code', null, a.id === 'claude' ? 'claude' : 'codex login'), ' if you have not already.')
-          : h('div', { style: { fontSize: '13px', marginTop: '4px' } }, 'Install in a terminal: ', h('code', null, a.installHint))),
-      s.engine === a.id ? h('span', { class: 'pill on' }, 'Default') : h('button', { class: 'btn small', disabled: !a.installed, onclick: () => set({ engine: a.id }) }, 'Make default')))),
+    h('div', { class: 'agent-rows' }, env.agents.map(a => agentRow(a, s, set))),
     h('div', { style: { marginTop: '10px' } }, h('button', { class: 'btn small ghost', onclick: async () => { await refreshEnv(); render(); toast('Checked again.'); } }, 'Check again')),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Access')),
     h('div', { class: 'field' }, segOf('access', [['standard', 'Standard'], ['full', 'Full access']]),
@@ -1274,4 +1270,50 @@ async function runKitFix(row) {
     closeBtn.disabled = false;
     renderSidebar();
   }
+}
+
+/* ---------- agents: logos, connected state, one-click connect ---------- */
+const AGENT_MARK = { claude: 'C', codex: 'X', cursor: 'Cu', grok: 'G', antigravity: 'A', opencode: 'O' };
+function agentLogo(id) { return h('span', { class: 'agent-logo ' + id }, AGENT_MARK[id] || String(id).slice(0, 1).toUpperCase()); }
+function agentStateText(a) {
+  if (!a.installed) return 'Not installed';
+  if (a.connected === true) return `Connected${a.account ? ' · ' + a.account : ''}`;
+  if (a.connected === false) return 'Not connected';
+  return `${a.vendor} · ${a.version || 'installed'}`;
+}
+const connecting = new Set();
+async function connectAgent(a) {
+  if (connecting.has(a.id)) return;
+  connecting.add(a.id); render();
+  if (a.loginKind === 'browser') toast(`Your browser opens ${a.vendor}’s sign-in page. Sign in, allow access, then come back here.`, 8000);
+  else toast(`A Terminal window opens with the ${a.name} sign-in. Follow it there, then click Check again.`, 8000);
+  try {
+    const r = await api.agents.login(a.id);
+    state.env.agents = r.agents;
+    const now = r.agents.find(x => x.id === a.id);
+    if (r.terminal) { /* the person finishes in Terminal */ }
+    else if (now && now.connected) toast(`${a.name} is connected.`);
+    else toast(`${a.name} did not finish signing in. Try Connect again.`, 6000);
+  } catch (err) {
+    toast(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), 6000);
+  } finally { connecting.delete(a.id); render(); }
+}
+function agentRow(a, s, set) {
+  let right;
+  if (!a.installed) right = h('button', { class: 'btn small', onclick: () => api.os.openExternal(a.docs) }, 'How to install ↗');
+  else if (connecting.has(a.id)) right = h('span', { class: 'row-gap', style: { marginTop: 0 } }, h('span', { class: 'conn wait' }, h('span', { class: 'kdot' }), 'Waiting for sign-in…'),
+    h('button', { class: 'btn small ghost', onclick: () => api.agents.cancelLogin() }, 'Cancel'));
+  else if (a.connected === false) right = h('button', { class: 'btn small coral', onclick: () => connectAgent(a) }, 'Connect');
+  else right = h('span', { class: 'row-gap', style: { marginTop: 0, alignItems: 'center' } },
+    a.connected ? h('span', { class: 'conn ok' }, h('span', { class: 'kdot' }), 'Connected') : h('button', { class: 'btn small ghost', onclick: () => connectAgent(a), title: 'This agent cannot report its sign-in. Sign in again if it asks.' }, 'Sign in'),
+    s.engine === a.id ? h('span', { class: 'pill on' }, 'Default') : h('button', { class: 'btn small', onclick: () => set({ engine: a.id }) }, 'Make default'));
+  const sub = !a.installed ? h('div', { style: { fontSize: '13px', marginTop: '4px' } }, 'Install in a terminal: ', h('code', null, a.installHint))
+    : a.connected === false ? h('div', { class: 'fh' }, a.loginKind === 'browser' ? `Connect opens ${a.vendor}’s page. Sign in with your ${a.plan} plan and allow access.` : `Connect opens a Terminal window with the sign-in. Use your ${a.plan} account.`)
+    : a.connected ? h('div', { class: 'fh' }, `Uses your own ${a.plan} plan.`)
+    : h('div', { class: 'fh' }, 'Installed. It cannot report whether it is signed in; if a reply asks you to sign in, click Sign in.');
+  return h('div', { class: 'agent-row' + (a.connected ? ' is-on' : '') }, agentLogo(a.id),
+    h('div', { class: 'grow' }, h('div', { style: { fontWeight: 600 } }, a.name, ' ',
+      a.beta ? h('span', { class: 'beta' }, 'beta') : null,
+      h('span', { style: { color: 'var(--label)', fontWeight: 400 } }, a.installed ? ` · ${a.version || 'installed'}` : ' · not installed')), sub),
+    right);
 }

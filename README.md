@@ -22,7 +22,7 @@ npm start
 You also need:
 
 - Node.js 20 or newer.
-- At least one agent, signed in: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`, then run `claude` and type `/login`) or [Codex](https://developers.openai.com/codex/cli) (`npm install -g @openai/codex`, then `codex login`).
+- At least one agent: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`, then run `claude` and type `/login`) or [Codex](https://developers.openai.com/codex/cli) (`npm install -g @openai/codex`). Cursor, Grok Build, Antigravity and OpenCode also work. Sign in from **Settings → Agents → Connect**.
 - [FilmCraft](https://github.com/storytold/filmcraft/releases/latest): the app **and** its command-line tool `filmcraft-cli`, the same version. The chat works without FilmCraft, but the timeline needs it.
 
 Ready-made `.dmg`, `.exe` and `.AppImage` files will be on the [Releases](https://github.com/MonarchLabsLLC/Scale-Video-Editor/releases) page when a version is tagged. They are not code-signed yet, so macOS and Windows show a warning the first time you open them.
@@ -33,7 +33,10 @@ Ready-made `.dmg`, `.exe` and `.AppImage` files will be on the [Releases](https:
 |---|---|
 | **Home** | A prompt box and the format library. Each format has a fill-in brief. Click one and the editor asks you each blank as a question, then sends the finished brief. **Fast prompt** lets the agent choose the open options. |
 | **Project** | Chat on the left, preview on the right. Every project is a normal folder in `Documents/Scale Video Editor/<name>` with `media`, `work` and `exports` inside. Anything the agent exports to `exports` plays in the preview. |
-| **Agent** | The editor starts `claude -p` or `codex exec` in the project folder for each message and reads its JSON event stream. Conversations continue with the agent's own session id. Switch agents per project from the picker under the chat box. |
+| **Agent** | The editor starts the agent's headless mode (`claude -p`, `codex exec`, `cursor-agent -p`, `grok -p`, `agy -p` or `opencode run`) in the project folder for each message and reads its JSON event stream. Conversations continue with the agent's own session id. Switch agents per project from the picker under the chat box. |
+| **Connect** | **Settings → Agents** shows a green **Connected** dot for each signed-in agent, or a **Connect** button. Connect runs the agent's own sign-in: Claude Code, Codex, Cursor and Grok Build open their sign-in page in your browser (sign in, allow access, and you are sent back); Antigravity and OpenCode open a Terminal window with their sign-in. Either way the agent uses your own subscription, and the editor never sees a password or key. Grok Build, Antigravity and OpenCode are marked beta. |
+| **Tools** | Every tool in the Scale Video Toolkit, what it does and whether it is ready on this computer, read from the toolkit's own `tools/verify-install.sh`. |
+| **Setup** | What this computer still needs. **Install** runs the toolkit's installer for that one part (only the known install steps) and shows the log. Keys you add yourself in Terminal. |
 | **FilmCraft** | **Connect FilmCraft** starts the FilmCraft app with its control bridge. The agent gets FilmCraft's MCP server (`filmcraft-cli mcp --bridge`) for that turn. The **FilmCraft timeline** tab renders the Program frame at any point of the sequence. |
 
 The editor never modifies FilmCraft. It uses only FilmCraft's public CLI, control bridge and MCP server, so FilmCraft can update on its own schedule. The editor shows when a newer FilmCraft release is out.

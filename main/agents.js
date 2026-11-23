@@ -38,9 +38,66 @@ const ENGINES = {
     bin: 'codex',
     installHint: 'npm install -g @openai/codex',
     docs: 'https://developers.openai.com/codex/cli',
-    models: [{ id: '', label: 'Default' }]
+    models: [{ id: '', label: 'Default' }],
+    login: { args: ['login'], browser: true, plan: 'ChatGPT' },
+    status: { args: ['login', 'status'], parse: out => /logged in/i.test(out) && !/not logged in/i.test(out) ? { connected: true, detail: (out.match(/using (.+)/i) || [])[1] || '' } : { connected: false } }
+  },
+  cursor: {
+    id: 'cursor',
+    name: 'Cursor',
+    vendor: 'Cursor',
+    bin: 'cursor-agent',
+    installHint: 'curl https://cursor.com/install -fsS | bash',
+    docs: 'https://cursor.com/cli',
+    models: [{ id: '', label: 'Default' }],
+    login: { args: ['login'], browser: true, plan: 'Cursor' },
+    status: { args: ['status'], parse: out => /not logged in/i.test(out) ? { connected: false } : /logged in/i.test(out) ? { connected: true, detail: (out.match(/logged in as\s+(\S+)/i) || [])[1] || '' } : null }
+  },
+  grok: {
+    id: 'grok',
+    name: 'Grok Build',
+    vendor: 'xAI',
+    bin: 'grok',
+    installHint: 'curl -fsSL https://x.ai/cli/install.sh | bash',
+    docs: 'https://docs.x.ai/build/overview',
+    models: [{ id: '', label: 'Default' }],
+    login: { args: ['login'], browser: true, plan: 'SuperGrok' },
+    beta: true
+  },
+  antigravity: {
+    id: 'antigravity',
+    name: 'Antigravity',
+    vendor: 'Google',
+    bin: 'agy',
+    installHint: 'Install the Antigravity CLI from antigravity.google',
+    docs: 'https://antigravity.google/docs/cli/reference/',
+    models: [{ id: '', label: 'Default' }],
+    login: { terminal: 'agy', plan: 'Google' },
+    beta: true
+  },
+  opencode: {
+    id: 'opencode',
+    name: 'OpenCode',
+    vendor: 'OpenCode',
+    bin: 'opencode',
+    installHint: 'npm install -g opencode-ai',
+    docs: 'https://opencode.ai/docs/cli',
+    models: [{ id: '', label: 'Default' }],
+    login: { terminal: 'opencode auth login', plan: 'your provider' },
+    beta: true
   }
 };
+ENGINES.claude.login = { args: ['auth', 'login', '--claudeai'], browser: true, plan: 'Claude' };
+ENGINES.claude.status = { args: ['auth', 'status'], parse: out => { try { const j = JSON.parse(out); return { connected: !!j.loggedIn, detail: j.subscriptionType || j.authMethod || '' }; } catch { return null; } } };
+
+// The environment an agent runs in. Variables a parent Claude Code session sets would make a child
+// think it is nested, so they are left out.
+function agentEnv() {
+  const env = { ...process.env };
+  delete env.ELECTRON_RUN_AS_NODE;
+  for (const k of Object.keys(env)) if (k === 'CLAUDECODE' || k.startsWith('CLAUDE_CODE_')) delete env[k];
+  return env;
+}
 
 function extraBinDirs() {
   const h = os.homedir();
@@ -77,16 +134,70 @@ function versionOf(file) {
   });
 }
 
-async function detect() {
-  const out = [];
-  for (const e of Object.values(ENGINES)) {
-    const file = which(e.bin);
-    out.push({
-      id: e.id, name: e.name, vendor: e.vendor, models: e.models, installHint: e.installHint, docs: e.docs,
-      installed: Boolean(file), version: file ? await versionOf(file) : null
+// Signed in? null when the agent has no way to tell from the command line.
+function authOf(e, file) {
+  if (!e.status) return Promise.resolve(null);
+  return new Promise(resolve => {
+    execFile(file, e.status.args, { timeout: 15000, env: agentEnv(), shell: process.platform === 'win32' }, (err, stdout, stderr) => {
+      const out = `${stdout || ''}\n${stderr || ''}`.trim();
+      try { resolve(e.status.parse(out)); } catch { resolve(null); }
     });
-  }
-  return out;
+  });
+}
+
+async function detect() {
+  return Promise.all(Object.values(ENGINES).map(async e => {
+    const file = which(e.bin);
+    const [version, auth] = file ? await Promise.all([versionOf(file), authOf(e, file)]) : [null, null];
+    return {
+      id: e.id, name: e.name, vendor: e.vendor, models: e.models, installHint: e.installHint, docs: e.docs, beta: !!e.beta,
+      installed: Boolean(file), version,
+      connected: auth ? auth.connected : null, account: auth && auth.detail ? auth.detail : '',
+      loginKind: e.login ? (e.login.browser ? 'browser' : 'terminal') : null, plan: e.login ? e.login.plan : ''
+    };
+  }));
+}
+
+// Starts the agent's own sign-in. Browser logins run the agent's login command, which opens the
+// vendor's page (Claude, ChatGPT, Cursor, xAI) and returns here after you grant access. Agents
+// whose sign-in is a terminal screen get a Terminal window with the command typed in.
+function login(id, { openExternal, onLine } = {}) {
+  const e = ENGINES[id];
+  if (!e || !e.login) return Promise.reject(new Error('This agent has no sign-in.'));
+  const file = which(e.bin);
+  if (!file) return Promise.reject(new Error(`${e.name} is not installed.`));
+  if (e.login.terminal) return openTerminal(e.login.terminal.replace(/^\S+/, file)).then(() => ({ terminal: true }));
+  return new Promise(resolve => {
+    const child = spawn(file, e.login.args, { env: agentEnv(), shell: process.platform === 'win32', windowsHide: true });
+    let opened = false, all = '';
+    const feed = chunk => {
+      const text = chunk.toString('utf8');
+      all = (all + text).slice(-8000);
+      text.split(/\r?\n/).forEach(l => l.trim() && onLine && onLine(l.replace(/\x1b\[[0-9;]*m/g, '')));
+      const url = (text.match(/https:\/\/[^\s'"<>]+/) || [])[0];
+      if (url && !opened && openExternal) { opened = true; setTimeout(() => openExternal(url), 2500); }
+    };
+    child.stdout.on('data', feed);
+    child.stderr.on('data', feed);
+    const timer = setTimeout(() => child.kill('SIGTERM'), 10 * 60_000);
+    child.on('close', code => { clearTimeout(timer); resolve({ code, output: all }); });
+    child.on('error', err => { clearTimeout(timer); resolve({ code: 1, output: err.message }); });
+    login.cancel = () => child.kill('SIGTERM');
+  });
+}
+
+function openTerminal(command) {
+  return new Promise(resolve => {
+    if (process.platform === 'darwin') {
+      const f = path.join(os.tmpdir(), `sve-signin-${Date.now()}.command`);
+      fs.writeFileSync(f, `#!/bin/bash\n${command}\necho\necho "Done. You can close this window and go back to Scale Video Editor."\n`, { mode: 0o700 });
+      execFile('open', ['-a', 'Terminal', f], () => resolve());
+    } else if (process.platform === 'win32') {
+      spawn('cmd.exe', ['/c', 'start', 'cmd.exe', '/k', command], { detached: true, windowsHide: false }).unref(); resolve();
+    } else {
+      spawn('x-terminal-emulator', ['-e', `bash -lc ${JSON.stringify(command + '; exec bash')}`], { detached: true }).on('error', () => {}).unref(); resolve();
+    }
+  });
 }
 
 function systemPrompt({ projectDir, toolkitDir, filmcraft }) {
@@ -157,6 +268,44 @@ function codexArgs(ctx) {
     return ['exec', 'resume', '--json', '--skip-git-repo-check', ...access, ...cfg, ctx.resume, '-'];
   }
   return ['exec', '--json', '--skip-git-repo-check', '-C', ctx.projectDir, ...access, ...cfg, '-'];
+}
+
+// Cursor reads MCP servers from .cursor/mcp.json in the workspace.
+function cursorArgs(ctx) {
+  if (ctx.filmcraft) {
+    const mcp = mcpLauncher(ctx);
+    const dir = path.join(ctx.projectDir, '.cursor');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'mcp.json'), JSON.stringify({ mcpServers: { filmcraft: mcp } }, null, 2));
+  }
+  const args = ['-p', '--output-format', 'stream-json', '--trust', '--approve-mcps', '--workspace', ctx.projectDir];
+  if (ctx.access === 'full') args.push('--force');
+  if (ctx.model) args.push('--model', ctx.model);
+  if (ctx.resume) args.push('--resume', ctx.resume);
+  if (ctx.toolkitDir) args.push('--add-dir', ctx.toolkitDir);
+  return args;
+}
+function grokArgs(ctx) {
+  const args = ['--output-format', 'streaming-json'];
+  if (ctx.model) args.push('--model', ctx.model);
+  if (ctx.resume) args.push('--resume', ctx.resume);
+  return args;
+}
+function antigravityArgs(ctx) {
+  const args = ['--output-format', 'stream-json'];
+  if (ctx.model) args.push('--model', ctx.model);
+  return args;
+}
+function opencodeArgs(ctx) {
+  const args = ['run', '--format', 'json'];
+  if (ctx.model) args.push('--model', ctx.model);
+  if (ctx.resume) args.push('--session', ctx.resume);
+  return args;
+}
+
+// Agents without a way to take the editor's instructions as a flag get them at the top of the prompt.
+function withInstructions(ctx, prompt) {
+  return ctx.resume ? prompt : `${systemPrompt(ctx)}\n\n---\n\n${prompt}`;
 }
 
 function short(v, n = 160) {
@@ -233,6 +382,37 @@ function parseCodex(ev) {
   return out;
 }
 
+// Cursor and Grok print Claude-style stream-json. OpenCode and Antigravity print their own events;
+// this reads the common fields and ignores the rest.
+function parseGeneric(ev) {
+  const out = parseClaude(ev);
+  if (ev.type === 'tool_call' && ev.subtype === 'started' && ev.tool_call) {
+    const k = Object.keys(ev.tool_call)[0] || 'tool';
+    out.push({ kind: 'tool', name: k.replace(/ToolCall$/, ''), detail: toolDetail(k, (ev.tool_call[k] || {}).args) });
+  }
+  if (ev.type === 'tool_call' && ev.subtype === 'completed') out.push({ kind: 'tool-result', ok: true, detail: '' });
+  if (!out.length) {
+    const part = ev.part || {};
+    if (ev.type === 'text' && (part.text || ev.text)) out.push({ kind: 'text', text: part.text || ev.text });
+    else if (ev.type === 'tool_use' && part.tool) out.push({ kind: 'tool', name: part.tool, detail: toolDetail(part.tool, (part.state || {}).input) });
+    else if (ev.type === 'error') out.push({ kind: 'notice', text: short(ev.message || (ev.error && ev.error.message) || ev.error, 300) });
+    else if (typeof ev.response === 'string') out.push({ kind: 'text', text: ev.response });
+  }
+  const sid = ev.sessionID || ev.sessionId || ev.conversation_id || ev.conversationId;
+  if (sid && !out.some(e => e.kind === 'session')) out.push({ kind: 'session', id: sid });
+  if (ev.status && ev.num_turns != null) out.push({ kind: 'done', ok: !/error|fail/i.test(ev.status), error: /error|fail/i.test(ev.status) ? short(ev.error || ev.status, 400) : null });
+  return out;
+}
+
+const RUNNERS = {
+  claude: { args: claudeArgs, parse: parseClaude, stdin: true },
+  codex: { args: codexArgs, parse: parseCodex, stdin: true },
+  cursor: { args: cursorArgs, parse: parseGeneric, prompt: 'last' },
+  grok: { args: grokArgs, parse: parseGeneric, prompt: 'flag', flag: '-p' },
+  antigravity: { args: antigravityArgs, parse: parseGeneric, prompt: 'flag', flag: '-p' },
+  opencode: { args: opencodeArgs, parse: parseGeneric, prompt: 'last' }
+};
+
 // Runs one turn. Returns a handle with stop(). onEvent receives the shared event shape.
 function runTurn(ctx, prompt, onEvent) {
   const engine = ENGINES[ctx.engine];
@@ -242,10 +422,15 @@ function runTurn(ctx, prompt, onEvent) {
     onEvent({ kind: 'done', ok: false, error: `${engine.name} is not installed. Install it with: ${engine.installHint}` });
     return { stop() {} };
   }
-  const args = ctx.engine === 'claude' ? claudeArgs(ctx) : codexArgs(ctx);
-  const parse = ctx.engine === 'claude' ? parseClaude : parseCodex;
-  const env = { ...process.env };
-  delete env.ELECTRON_RUN_AS_NODE;
+  const runner = RUNNERS[ctx.engine];
+  if (ctx.engine === 'grok' || ctx.engine === 'antigravity' || ctx.engine === 'opencode') ctx = { ...ctx, filmcraft: false };
+  const args = runner.args(ctx);
+  const parse = runner.parse;
+  if (!runner.stdin) {
+    const full = withInstructions(ctx, prompt);
+    if (runner.prompt === 'flag') args.push(runner.flag, full); else args.push(full);
+  }
+  const env = agentEnv();
   const child = spawn(file, args, { cwd: ctx.projectDir, env, shell: process.platform === 'win32', windowsHide: true });
   let buf = '';
   let finished = false;
@@ -277,7 +462,7 @@ function runTurn(ctx, prompt, onEvent) {
       emit({ kind: 'done', ok: code === 0, error: code === 0 ? null : (tail || `${engine.name} stopped (exit ${code}).`) });
     }
   });
-  child.stdin.end(prompt);
+  if (runner.stdin) child.stdin.end(prompt); else child.stdin.end();
   return {
     stop() {
       if (!child.killed) child.kill('SIGTERM');
@@ -286,4 +471,4 @@ function runTurn(ctx, prompt, onEvent) {
   };
 }
 
-module.exports = { ENGINES, detect, runTurn, claudeArgs, codexArgs, parseClaude, parseCodex, systemPrompt, which };
+module.exports = { ENGINES, detect, login, openTerminal, runTurn, claudeArgs, codexArgs, cursorArgs, parseClaude, parseCodex, parseGeneric, systemPrompt, which };

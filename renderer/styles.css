@@ -412,3 +412,16 @@ button.tool-pill:hover { border-color: var(--label); }
 .sheet.confirm.wide { width: min(820px, 100%); }
 .fixlog { margin: 12px 0 0; height: 320px; overflow: auto; background: #0e0d1c; color: #d9d6f0; border-radius: 12px; padding: 12px 14px; font-family: var(--mono); font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 .sline > .grow, .tools-bar > .grow { flex: 1; min-width: 0; }
+
+/* agents */
+.agent-logo.cursor { background: #1b1b1b; color: #f4f4f4; font-size: 11px; }
+.agent-logo.grok { background: #e9e9e4; color: #111; }
+.agent-logo.antigravity { background: #c8dcf7; color: #0f2a4d; }
+.agent-logo.opencode { background: var(--hair); color: var(--ink); }
+.conn { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; }
+.conn .kdot { width: 9px; height: 9px; border-radius: 50%; background: var(--label); }
+.conn.ok { color: var(--ok); }
+.conn.ok .kdot { background: var(--ok); box-shadow: 0 0 0 3px rgba(47, 158, 91, .18); }
+.conn.wait .kdot { background: var(--warn); animation: pulse 1.2s infinite; }
+.beta { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--hair); border-radius: 999px; padding: 1px 7px; color: var(--label); vertical-align: 2px; margin-right: 4px; }
+.agent-row .grow { flex: 1; min-width: 0; }

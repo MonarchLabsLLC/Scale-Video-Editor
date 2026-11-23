@@ -38,6 +38,12 @@ contextBridge.exposeInMainWorld('sve', {
     trash: id => invoke('projects:trash', id),
     duplicate: id => invoke('projects:duplicate', id)
   },
+  agents: {
+    detect: () => invoke('agents:detect'),
+    login: id => invoke('agents:login', id),
+    cancelLogin: () => invoke('agents:cancelLogin'),
+    onLoginLine: fn => { const h = (_e, d) => fn(d); ipcRenderer.on('agent:login', h); return () => ipcRenderer.removeListener('agent:login', h); }
+  },
   agent: {
     send: payload => invoke('agent:send', payload),
     stop: id => invoke('agent:stop', id),

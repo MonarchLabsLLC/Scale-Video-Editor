@@ -128,7 +128,7 @@ async function takeSnapshots() {
   await js("window.__sve.refreshKit(true)"); await wait(6000);
   await js("window.__sve.go({ view: 'tools', tool: 'voice' })"); await wait(600); await shot('4b-tools');
   await js("window.__sve.go({ view: 'setup' })"); await wait(300); await shot('4c-setup');
-  await js("window.__sve.go({ view: 'settings' })"); await shot('5-settings');
+  await js("window.__sve.go({ view: 'settings' })"); await wait(300); await js("document.querySelectorAll('*').forEach(e => { if (e.scrollTop) e.scrollTop = 0; })"); await shot('5-settings');
   await js("window.__sve.go({ view: 'filmcraft' })"); await shot('6-filmcraft');
   app.exit(0);
 }
@@ -178,6 +178,13 @@ function registerIpc() {
     return shell.openPath(full);
   });
   ipcMain.handle('clipboard:write', (_e, text) => { require('electron').clipboard.writeText(String(text)); return true; });
+
+  ipcMain.handle('agents:login', async (_e, id) => {
+    const r = await agents.login(id, { openExternal: url => shell.openExternal(url), onLine: line => send('agent:login', { id, line }) });
+    return { ...r, agents: await agents.detect() };
+  });
+  ipcMain.handle('agents:cancelLogin', () => { if (agents.login.cancel) agents.login.cancel(); });
+  ipcMain.handle('agents:detect', () => agents.detect());
 
   ipcMain.handle('settings:set', (_e, patch) => {
     const next = { ...readSettings(), ...patch };
