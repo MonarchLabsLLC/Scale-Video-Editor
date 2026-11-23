@@ -50,6 +50,9 @@ contextBridge.exposeInMainWorld('sve', {
   },
   agents: {
     detect: () => invoke('agents:detect'),
+    models: (id, opts) => invoke('agents:models', id, opts),
+    setModel: (id, choice) => invoke('agents:setModel', id, choice),
+    onModelsChanged: fn => { const l = () => fn(); ipcRenderer.on('models:changed', l); return () => ipcRenderer.removeListener('models:changed', l); },
     login: id => invoke('agents:login', id),
     cancelLogin: () => invoke('agents:cancelLogin'),
     loginCode: text => invoke('agents:loginCode', text),

@@ -12,6 +12,7 @@ const updater = require('./updater');
 const guide = require('./guide');
 const toolkit = require('./toolkit');
 const brands = require('./brands');
+const models = require('./models');
 
 app.setName('Scale Video Editor');
 const APP_ICON = path.join(__dirname, '..', 'renderer', 'assets', 'app-icon.png');
@@ -36,7 +37,8 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
-const DEFAULT_SETTINGS = { engine: 'claude', model: '', access: 'standard', toolkitDir: '', brand: '' };
+// models: { <agent id>: { model, effort } }, the model and effort chosen for each agent.
+const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, access: 'standard', toolkitDir: '', brand: '' };
 
 function readSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) }; } catch { return { ...DEFAULT_SETTINGS }; }
@@ -115,7 +117,17 @@ async function takeSnapshots() {
   };
   fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
   await wait(1800);
+  for (let i = 0; i < 40 && !(await js("!!document.querySelector('.composer')")); i++) await wait(250);
   await shot('1-home');
+  // A short window: the agent menu must open downward or scroll, not run off the top.
+  const size = win.getSize(); win.setSize(1300, 640); await js("window.__sve.go({ view: 'home' })"); await wait(1500);
+  await js("document.querySelector('.agent-pick:not(.model-pick):not(.brand-pick) .mini-select')?.click()"); await wait(300); await shot('1d-agent-menu');
+  win.setSize(size[0], size[1]); await wait(300);
+  await js("document.body.click()");
+  // Show a chosen model and its effort without saving it to the real settings.
+  await js("window.__sve.state.env.settings.models = { ...(window.__sve.state.env.settings.models || {}), claude: { model: 'opus', effort: 'medium' } }; window.__sve.go({ view: 'home' })"); await wait(1500);
+  await js("document.querySelector('.model-pick .mini-select')?.click()"); await wait(400); await shot('1e-model-menu');
+  await js("document.body.click()");
   await js("document.querySelector('.pcard .more-btn')?.click()"); await wait(200); await shot('1b-menu');
   await js("[...document.querySelectorAll('.pop-menu .menu-item')].find(b => b.textContent.startsWith('Delete'))?.click()"); await wait(200); await shot('1c-delete');
   await js("document.querySelector('#overlay .sheet-foot .btn:not(.danger)')?.click()");
@@ -222,6 +234,26 @@ function scanSite(url) {
   });
 }
 
+// The model list for one agent, read from that agent on this computer.
+function modelList(id, refresh) {
+  const engine = agents.ENGINES[id];
+  if (!engine) return { models: [], effortFlag: false, fallback: '' };
+  return models.list(engine, { file: agents.which(engine.bin), env: agents.agentEnv(), refresh });
+}
+// Ask every installed agent for its newest models, so a new model shows up after a restart.
+async function refreshAllModels() {
+  for (const id of Object.keys(agents.ENGINES)) {
+    if (agents.which(agents.ENGINES[id].bin) || id === 'claude') await modelList(id, true).catch(() => {});
+  }
+  if (win && !win.isDestroyed()) win.webContents.send('models:changed');
+}
+// The model and effort for a turn: the choice for this agent, else the older single model setting.
+function pickModel(engine, project, settings) {
+  const choice = (settings.models || {})[engine];
+  if (choice && choice.model) return models.resolve(engine, choice);
+  return { model: project.model || settings.model || '', effort: '' };
+}
+
 function registerIpc() {
   ipcMain.handle('guide:ask', (_e, payload) => guide.ask(payload, app.getVersion()));
   ipcMain.handle('update:get', () => updater.get());
@@ -275,6 +307,13 @@ function registerIpc() {
   ipcMain.handle('agents:loginCode', (_e, text) => agents.loginInput(text));
   ipcMain.handle('agents:cancelLogin', () => { if (agents.login.cancel) agents.login.cancel(); });
   ipcMain.handle('agents:detect', () => agents.detect());
+  ipcMain.handle('agents:models', (_e, id, opts) => modelList(String(id), !!(opts && opts.refresh)));
+  ipcMain.handle('agents:setModel', (_e, id, choice) => {
+    const s = readSettings();
+    const next = { ...s, models: { ...(s.models || {}), [String(id)]: { model: String(choice && choice.model || ''), effort: String(choice && choice.effort || '') } } };
+    writeSettings(next);
+    return next;
+  });
 
   ipcMain.handle('settings:set', (_e, patch) => {
     const next = { ...readSettings(), ...patch };
@@ -336,7 +375,7 @@ function registerIpc() {
     projects.appendChat(projectId, { role: 'user', text: prompt, attachments: attachments || [] });
     const ctx = {
       engine: project.engine || settings.engine,
-      model: project.model || settings.model,
+      ...pickModel(project.engine || settings.engine, project, settings),
       access: settings.access,
       projectDir: project.dir,
       resume: project.session,
@@ -426,8 +465,10 @@ app.whenReady().then(() => {
     if (!allowedPath(p)) return new Response('Not allowed', { status: 403 });
     return net.fetch(pathToFileURL(p).toString(), { headers: req.headers });
   });
+  models.setCacheFile(path.join(app.getPath('userData'), 'models.json'));
   registerIpc();
   createWindow();
+  setTimeout(() => refreshAllModels().catch(() => {}), 1500);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 

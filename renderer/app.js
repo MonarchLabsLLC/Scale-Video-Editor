@@ -8,6 +8,7 @@ const TICKS = 254016000000;
 
 const state = {
   env: null,
+  models: {},
   projects: [],
   fc: null,
   route: { view: 'home' },
@@ -245,6 +246,101 @@ function agentPicker({ value, onChange, up = true }) {
     menu.append(h('div', { class: 'menu-sep' }), h('button', { class: 'menu-item', type: 'button', onclick: () => go({ view: 'settings' }) },
       h('span', { class: 'mi-sub' }, 'Agent settings…')));
     wrap.append(menu);
+    fitMenu(menu, btn);
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  });
+  return wrap;
+}
+
+// Keeps a menu that opens from a button inside the window: it opens on the side with more room
+// and scrolls when the list is taller than that room.
+function fitMenu(menu, anchor) {
+  const r = anchor.getBoundingClientRect();
+  const above = r.top - 16, below = innerHeight - r.bottom - 16;
+  const want = menu.scrollHeight;
+  const down = menu.classList.contains('down') ? !(want > below && above > below) : (want > above && below > above);
+  menu.classList.toggle('down', down);
+  menu.style.maxHeight = Math.max(160, down ? below : above) + 'px';
+  menu.style.overflowY = 'auto';
+}
+
+/* ---------- model picker ---------- */
+const EFFORT_NAMES = { '': 'Standard', none: 'None', minimal: 'Minimal', low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra high', max: 'Max', ultra: 'Ultra' };
+function modelChoice(engine) { return (state.env?.settings?.models || {})[engine] || { model: '', effort: '' }; }
+async function loadModels(engine, refresh) {
+  try { state.models[engine] = await api.agents.models(engine, { refresh }); } catch {}
+  return state.models[engine];
+}
+function modelLabel(engine) {
+  const c = modelChoice(engine);
+  const list = state.models[engine];
+  if (!c.model) return 'Default model';
+  const m = list?.models.find(x => x.id === c.model);
+  const name = m ? m.label : c.model;
+  const effort = m && m.efforts.length ? (c.effort || m.defaultEffort) : '';
+  return effort ? `${name} · ${EFFORT_NAMES[effort] || effort}` : name;
+}
+function ago(t) {
+  if (!t) return 'not checked yet';
+  const s = Math.round((Date.now() - t) / 1000);
+  return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} days ago`;
+}
+function modelPicker({ engine, up = true }) {
+  const wrap = h('div', { class: 'agent-pick model-pick' });
+  const btn = h('button', { class: 'mini-select', type: 'button', title: `Choose the model ${agentInfo(engine).name || 'the agent'} uses` },
+    h('span', { class: 'mp-label' }, modelLabel(engine)), h('span', { style: { opacity: .5 } }, '▾'));
+  wrap.append(btn);
+  const relabel = () => { btn.querySelector('.mp-label').textContent = modelLabel(engine); };
+  wrap.relabel = relabel;
+  if (!state.models[engine]) loadModels(engine).then(relabel);
+  const save = async choice => { state.env.settings = await api.agents.setModel(engine, choice); relabel(); };
+  const draw = menu => {
+    const list = state.models[engine] || { models: [], fallback: '' };
+    const c = modelChoice(engine);
+    menu.innerHTML = '';
+    menu.append(h('div', { class: 'menu-head' }, `Model for ${agentInfo(engine).name || 'this agent'}`));
+    const item = (id, name, sub) => h('button', {
+      class: 'menu-item', type: 'button', onclick: async ev => {
+        ev.stopPropagation();
+        const m = list.models.find(x => x.id === id);
+        const effort = m && m.efforts.length ? (m.efforts.includes(c.effort) ? c.effort : m.defaultEffort) : '';
+        await save({ model: id, effort });
+        draw(menu);
+      }
+    }, h('span', null, h('div', { class: 'mi-name' }, name), sub ? h('div', { class: 'mi-sub' }, sub) : null),
+      (c.model || '') === id ? h('span', { class: 'mi-check' }, '✓') : null);
+    menu.append(item('', 'Default', `Uses the ${list.fallback || 'agent setting'}`));
+    if (!list.models.length) menu.append(h('div', { class: 'menu-note' }, state.models[engine] ? 'This agent did not list its models. It uses its own setting.' : 'Loading the models…'));
+    for (const m of list.models) menu.append(item(m.id, m.label, m.note || (m.id !== m.label ? m.id : '')));
+    const cur = list.models.find(x => x.id === c.model);
+    if (cur && cur.efforts.length) {
+      const effort = c.effort || cur.defaultEffort;
+      menu.append(h('div', { class: 'menu-sep' }), h('div', { class: 'menu-head' }, 'Effort'),
+        h('div', { class: 'effort-row' }, cur.efforts.map(e => h('button', {
+          class: 'eff' + (e === effort ? ' on' : ''), type: 'button',
+          onclick: async ev => { ev.stopPropagation(); await save({ model: cur.id, effort: e }); draw(menu); }
+        }, EFFORT_NAMES[e] || e))),
+        h('div', { class: 'menu-note' }, 'More effort thinks longer: better for hard videos, slower and uses more of your plan.'));
+    }
+    menu.append(h('div', { class: 'menu-sep' }), h('button', {
+      class: 'menu-item', type: 'button', onclick: async ev => {
+        ev.stopPropagation();
+        ev.currentTarget.querySelector('.mi-sub').textContent = 'Checking…';
+        await loadModels(engine, true); relabel(); draw(menu);
+      }
+    }, h('span', { class: 'mi-sub' }, `Check for new models · updated ${ago(list.fetched)}`)));
+  };
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = wrap.querySelector('.menu');
+    if (open) { open.remove(); return; }
+    const menu = h('div', { class: 'menu' + (up ? '' : ' down') });
+    menu.addEventListener('click', ev => ev.stopPropagation());
+    draw(menu);
+    wrap.append(menu);
+    fitMenu(menu, btn);
+    if (!state.models[engine]) loadModels(engine).then(() => { relabel(); if (menu.isConnected) { draw(menu); fitMenu(menu, btn); } });
     const close = () => { menu.remove(); document.removeEventListener('click', close); };
     setTimeout(() => document.addEventListener('click', close), 0);
   });
@@ -327,7 +423,7 @@ function viewHome() {
     h('h1', { class: 'hero', html: 'Any video you can <em>describe.</em>' }),
     h('p', { class: 'lede' }, 'Say what you want to make. Your agent picks the tools and builds it while you watch, and FilmCraft holds the timeline.'),
     composer({
-      key: 'home', big: true, footLeft: [picker, bpick],
+      key: 'home', big: true, footLeft: [picker, modelPicker({ engine: chosen }), bpick],
       placeholder: 'Describe your video, or pick a kind of video below. Drop footage, a script or a screenshot here.',
       onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, brand, prompt: text, attachments: files })
     }),
@@ -465,9 +561,14 @@ function openInterview(f) {
     close();
     startProject({ name: f.name, engine, brand, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
   };
-  let picker;
-  const onPick = id => { engine = id; const next = agentPicker({ value: id, onChange: onPick }); picker.replaceWith(next); picker = next; };
+  let picker, mpick;
+  const onPick = id => {
+    engine = id;
+    const next = agentPicker({ value: id, onChange: onPick }); picker.replaceWith(next); picker = next;
+    const nm = modelPicker({ engine: id }); mpick.replaceWith(nm); mpick = nm;
+  };
   picker = agentPicker({ value: engine, onChange: onPick });
+  mpick = modelPicker({ engine });
   let bpick;
   const onBrand = uid => { brand = uid; const next = brandPicker({ value: uid, onChange: onBrand }); bpick.replaceWith(next); bpick = next; };
   bpick = brandPicker({ value: brand, onChange: onBrand });
@@ -477,7 +578,7 @@ function openInterview(f) {
       h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,
-    h('div', { class: 'sheet-foot' }, picker, bpick, h('span', { class: 'grow' }),
+    h('div', { class: 'sheet-foot' }, picker, mpick, bpick, h('span', { class: 'grow' }),
       h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
       h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →')));
   overlay.innerHTML = '';
@@ -607,7 +708,7 @@ function viewProject(id) {
       placeholder: busy ? 'The agent is working…' : 'Ask for a change, or say what to make next.',
       onSubmit: (text, files) => sendTurn(id, text, files),
       onStop: () => api.agent.stop(id),
-      footLeft: [picker, bpick]
+      footLeft: [picker, modelPicker({ engine: project.engine }), bpick]
     })));
   const right = h('section', { class: 'ws-right', id: 'preview' });
   const ws = h('div', { class: 'ws' }, left, right);
@@ -1062,6 +1163,11 @@ function updateSection() {
   $('#guideNav')?.addEventListener('click', () => guide.open ? closeGuide() : openGuide());
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && guide.open && !$('#overlay:not(.hidden)')) closeGuide(); });
   await Promise.all([refreshEnv(), refreshProjects(), refreshBrands()]);
+  // The main process asks each agent for its newest models at start; redraw when that is done.
+  api.agents.onModelsChanged(async () => {
+    await Promise.all(Object.keys(state.models).concat(state.env?.settings?.engine || 'claude').map(id => loadModels(id)));
+    document.querySelectorAll('.model-pick').forEach(w => w.relabel && w.relabel());
+  });
   const running = await api.agent.running();
   running.forEach(id => state.busy.add(id));
   render();

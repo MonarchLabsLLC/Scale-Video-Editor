@@ -110,6 +110,13 @@ h2.section { font-size: 40px; line-height: 1.02; letter-spacing: -0.045em; font-
 .menu-item .mi-sub { font-size: 12px; color: var(--label); }
 .menu-item .mi-check { margin-left: auto; color: var(--coral); font-weight: 700; }
 .menu-sep { height: 1px; background: var(--hair); margin: 6px 8px; }
+.menu-head { padding: 8px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--label); }
+.menu-note { padding: 4px 12px 8px; font-size: 12px; color: var(--label); max-width: 320px; }
+.effort-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px 4px; }
+.effort-row .eff { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--hair); font-size: 13px; font-weight: 600; }
+.effort-row .eff:hover { background: var(--soft); }
+.effort-row .eff.on { background: var(--ink, #111); color: var(--panel, #fff); border-color: transparent; }
+.model-pick .menu { min-width: 320px; max-width: 380px; }
 .agent-logo { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
 .agent-logo.claude { background: var(--peach); color: var(--peach-ink); }
 .agent-logo.codex { background: var(--lilac); color: var(--lilac-ink); }

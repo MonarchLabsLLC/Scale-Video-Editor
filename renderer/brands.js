@@ -332,6 +332,7 @@ function brandPicker({ value, onChange, up = true }) {
     menu.append(h('div', { class: 'menu-sep' }), h('button', { class: 'menu-item', type: 'button', onclick: () => go({ view: 'brands' }) },
       h('span', { class: 'mi-sub' }, (state.brands || []).length ? 'Manage brand guides…' : 'Add a brand guide…')));
     wrap.append(menu);
+    fitMenu(menu, btn);
     const close = () => { menu.remove(); document.removeEventListener('click', close); };
     setTimeout(() => document.addEventListener('click', close), 0);
   });

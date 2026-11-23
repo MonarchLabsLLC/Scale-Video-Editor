@@ -245,6 +245,7 @@ function claudeArgs(ctx) {
   }
   args.push('--append-system-prompt', systemPrompt(ctx));
   if (ctx.model) args.push('--model', ctx.model);
+  if (ctx.effort) args.push('--effort', ctx.effort);
   if (ctx.access === 'full') {
     args.push('--dangerously-skip-permissions');
   } else {
@@ -273,6 +274,7 @@ function codexArgs(ctx) {
   }
   c(`developer_instructions=${tomlString(systemPrompt(ctx))}`);
   if (ctx.model) cfg.push('-m', ctx.model);
+  if (ctx.effort) c(`model_reasoning_effort=${tomlString(ctx.effort)}`);
   const full = ctx.access === 'full';
   const access = full
     ? ['--dangerously-bypass-approvals-and-sandbox']
@@ -484,4 +486,4 @@ function runTurn(ctx, prompt, onEvent) {
   };
 }
 
-module.exports = { ENGINES, detect, login, loginInput, openTerminal, runTurn, claudeArgs, codexArgs, cursorArgs, parseClaude, parseCodex, parseGeneric, systemPrompt, which };
+module.exports = { ENGINES, agentEnv, detect, login, loginInput, openTerminal, runTurn, claudeArgs, codexArgs, cursorArgs, parseClaude, parseCodex, parseGeneric, systemPrompt, which };
