@@ -909,7 +909,7 @@ async function connectFilmcraft(id, projectFile) {
   toast('Starting FilmCraft…');
   const r = await api.filmcraft.connect(projectFile || null);
   await refreshFc();
-  if (!r.ok) toast(r.reason, 6000); else toast(r.already ? 'FilmCraft is connected.' : 'FilmCraft is open and connected.');
+  if (!r.ok) { toast(r.reason, 6000); if (!(state.fc || {}).app) go({ view: 'filmcraft' }); } else toast(r.already ? 'FilmCraft is connected.' : 'FilmCraft is open and connected.');
   if (id) { state.previewMode[id] = 'filmcraft'; drawPreview(id); loadSequence(id); }
 }
 
@@ -987,6 +987,20 @@ function viewSettings() {
     h('p', { style: { color: 'var(--label)', marginTop: '40px', fontSize: '12px' } }, `Scale Video Editor ${env.version || ''} · open source · FilmCraft is a separate Apache-2.0 project by storytold.`));
 }
 
+function tildePath(p) { return String(p).replace(/^\/Users\/[^/]+/, '~').replace(/^[A-Za-z]:\\Users\\[^\\]+/, '~'); }
+async function findFilmcraftApp(e) {
+  const btn = e && e.currentTarget; if (btn) { btn.disabled = true; btn.textContent = 'Looking…'; }
+  const r = await api.filmcraft.search();
+  await refreshFc(); render();
+  toast(r.ok ? `Found FilmCraft: ${tildePath(r.app)}` : 'FilmCraft was not found. Click "Choose where it is", or download it.');
+}
+async function chooseFilmcraftApp() {
+  const r = await api.filmcraft.choose();
+  if (!r.ok) { if (r.message) toast(r.message); return; }
+  await refreshFc(); render();
+  toast(`Using FilmCraft: ${tildePath(r.app)}`);
+}
+
 function viewFilmcraft() {
   const fc = state.fc || {};
   return h('div', { class: 'page compact', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
@@ -999,6 +1013,11 @@ function viewFilmcraft() {
       fc.updateAvailable ? h('p', null, `FilmCraft ${fc.latest} is out. Quit FilmCraft, install the new version of the app and its CLI together, then connect again. Keep the two on the same version.`) : null,
       fc.installed && !fc.cli ? h('p', null, 'The FilmCraft app is here, but its command-line tool (filmcraft-cli) is not. The agent needs it. Install it from the same release page.') : null,
       fc.appRunningWithoutBridge ? h('p', null, 'FilmCraft is open without its control bridge. Save your work and quit FilmCraft, then click Connect.') : null,
+      h('div', { class: 'kv' }, fc.appPath ? `App: ${tildePath(fc.appPath)}${fc.chosenApp ? ' (you chose this)' : ''}` : 'App: not found. If FilmCraft is already on this computer, let the editor find it or choose where it is.'),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn small', onclick: findFilmcraftApp }, 'Find it on my computer'),
+        h('button', { class: 'btn small', onclick: chooseFilmcraftApp }, 'Choose where it is…'),
+        fc.chosenApp ? h('button', { class: 'btn small ghost', style: { color: 'var(--on-navy)' }, onclick: async () => { await api.filmcraft.clearPath(); await refreshFc(); render(); toast('The editor looks in the usual places again.'); } }, 'Use the usual places') : null),
       h('div', { class: 'row' },
         fc.installed ? h('button', { class: 'btn coral', onclick: () => connectFilmcraft(null) }, fc.bridge ? 'Connected' : 'Connect FilmCraft') : null,
         h('button', { class: 'btn', onclick: () => api.os.openExternal(fc.releasesPage || 'https://github.com/storytold/filmcraft/releases/latest') }, fc.installed ? 'Release page' : 'Download FilmCraft'),

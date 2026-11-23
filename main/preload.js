@@ -80,6 +80,9 @@ contextBridge.exposeInMainWorld('sve', {
   },
   filmcraft: {
     status: () => invoke('filmcraft:status'),
+    choose: () => invoke('filmcraft:choose'),
+    search: () => invoke('filmcraft:search'),
+    clearPath: () => invoke('filmcraft:clearPath'),
     connect: file => invoke('filmcraft:connect', file),
     sequence: () => invoke('filmcraft:sequence'),
     frame: seconds => invoke('filmcraft:frame', seconds)

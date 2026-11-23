@@ -39,7 +39,7 @@ protocol.registerSchemesAsPrivileged([
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 // models: { <agent id>: { model, effort } }, the model and effort chosen for each agent.
-const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, voice: '', access: 'standard', toolkitDir: '', brand: '' };
+const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, voice: '', access: 'standard', toolkitDir: '', brand: '', filmcraftApp: '', filmcraftCli: '' };
 
 function readSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) }; } catch { return { ...DEFAULT_SETTINGS }; }
@@ -482,7 +482,33 @@ function registerIpc() {
   });
   ipcMain.handle('agent:running', () => [...running.keys()]);
 
+  const applyFcPaths = () => { const s = readSettings(); filmcraft.setPaths({ app: s.filmcraftApp, cli: s.filmcraftCli }); };
+  applyFcPaths();
+  const saveFcPaths = (app, cli) => { writeSettings({ ...readSettings(), filmcraftApp: app || '', filmcraftCli: cli || '' }); applyFcPaths(); };
   ipcMain.handle('filmcraft:status', () => filmcraft.status());
+  // The person points at the FilmCraft app by hand.
+  ipcMain.handle('filmcraft:choose', async () => {
+    const mac = process.platform === 'darwin', winos = process.platform === 'win32';
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Where is the FilmCraft app?',
+      defaultPath: mac ? '/Applications' : undefined,
+      properties: ['openFile'],
+      filters: mac ? [{ name: 'Apps', extensions: ['app'] }] : winos ? [{ name: 'Programs', extensions: ['exe'] }] : []
+    });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    const app = r.filePaths[0];
+    if (!filmcraft.validApp(app)) return { ok: false, message: mac ? 'That is not the FilmCraft app. Choose FilmCraft.app.' : 'That is not the FilmCraft app. Choose filmcraft.exe (not filmcraft-cli.exe).' };
+    saveFcPaths(app, filmcraft.cliNextTo(app));
+    return { ok: true, app };
+  });
+  // The editor looks for FilmCraft on this computer.
+  ipcMain.handle('filmcraft:search', async () => {
+    const hit = await filmcraft.search();
+    if (!hit) return { ok: false };
+    saveFcPaths(hit.app, hit.cli);
+    return { ok: true, app: hit.app };
+  });
+  ipcMain.handle('filmcraft:clearPath', () => { saveFcPaths('', ''); return true; });
   ipcMain.handle('filmcraft:connect', (_e, projectFile) => {
     if (projectFile && !allowedPath(projectFile)) projectFile = null;
     return filmcraft.startBridge(projectFile);

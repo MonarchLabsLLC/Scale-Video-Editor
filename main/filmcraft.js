@@ -50,8 +50,15 @@ function onPath(name) {
   return null;
 }
 
+// Paths the person chose, or the editor found by searching. They come first when they still exist.
+let chosen = { app: '', cli: '' };
+function setPaths(p) { chosen = { app: (p && p.app) || '', cli: (p && p.cli) || '' }; }
+function getPaths() { return { ...chosen }; }
+
 function findCli() {
   const candidates = [
+    chosen.cli,
+    chosen.app && cliNextTo(chosen.app),
     onPath('filmcraft-cli'),
     path.join(os.homedir(), '.local', 'bin', 'filmcraft-cli' + exe),
     path.join(os.homedir(), '.cargo', 'bin', 'filmcraft-cli' + exe),
@@ -63,6 +70,7 @@ function findCli() {
 }
 
 function findApp() {
+  if (chosen.app && validApp(chosen.app)) return chosen.app;
   if (process.platform === 'darwin') {
     const p = ['/Applications/FilmCraft.app', path.join(os.homedir(), 'Applications', 'FilmCraft.app')].find(fs.existsSync);
     return p || null;
@@ -84,6 +92,70 @@ function findApp() {
   }
   return onPath('filmcraft') || onPath('FilmCraft') || null;
 }
+
+// The program to start for an app path: on macOS the binary inside the .app bundle.
+function appBin(app) {
+  if (process.platform !== 'darwin' || !/\.app\/?$/i.test(app)) return app;
+  const dir = path.join(app, 'Contents', 'MacOS');
+  const named = path.join(dir, 'FilmCraft');
+  if (fs.existsSync(named)) return named;
+  try { const f = fs.readdirSync(dir).find(n => !n.startsWith('.')); return f ? path.join(dir, f) : named; } catch { return named; }
+}
+
+// True when the path looks like the FilmCraft app for this platform.
+function validApp(p) {
+  if (!p || !fs.existsSync(p)) return false;
+  const base = path.basename(p.replace(/[\\/]+$/, ''));
+  if (!/filmcraft/i.test(base) || /cli/i.test(base)) return false;
+  if (process.platform === 'darwin') return /\.app$/i.test(base) && fs.existsSync(appBin(p));
+  if (process.platform === 'win32') return /\.exe$/i.test(base);
+  try { return fs.statSync(p).isFile(); } catch { return false; }
+}
+
+// filmcraft-cli in the same folder as the app (Windows and Linux installs keep them together).
+function cliNextTo(app) {
+  const dirs = [path.dirname(app)];
+  if (process.platform === 'darwin') dirs.push(path.join(app, 'Contents', 'MacOS'), path.join(app, 'Contents', 'Resources'));
+  for (const d of dirs) { const c = path.join(d, 'filmcraft-cli' + exe); if (fs.existsSync(c)) return c; }
+  return null;
+}
+
+const SKIP = new Set(['node_modules', '.git', '.Trash', 'Library', 'Temp', '$Recycle.Bin', 'Windows', 'System Volume Information', '.cache', '.npm', 'Caches']);
+// Looks for the FilmCraft app on this computer: the usual install folders first, then the
+// home folder, a few levels deep. Stops after the time limit. Returns { app, cli } or null.
+async function search({ timeLimitMs = 20000 } = {}) {
+  const home = os.homedir();
+  const stop = Date.now() + timeLimitMs;
+  if (process.platform === 'darwin') {
+    const r = await run('mdfind', ['kMDItemFSName == "FilmCraft*.app"c'], { timeout: 8000 });
+    const hit = r.stdout.split('\n').map(x => x.trim()).find(validApp);
+    if (hit) return { app: hit, cli: findCliFor(hit) };
+  }
+  const roots = process.platform === 'win32'
+    ? [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA, path.join(home, '.local'), path.join(home, 'Downloads'), path.join(home, 'Desktop'), home]
+    : process.platform === 'darwin'
+      ? ['/Applications', path.join(home, 'Applications'), path.join(home, 'Downloads'), path.join(home, 'Desktop'), home]
+      : [path.join(home, '.local'), '/opt', '/usr/local', path.join(home, 'Downloads'), path.join(home, 'Applications'), home];
+  const seen = new Set();
+  for (const root of roots.filter(Boolean)) {
+    const queue = [[root, 0]];
+    while (queue.length) {
+      if (Date.now() > stop) return null;
+      const [dir, depth] = queue.shift();
+      if (seen.has(dir)) continue;
+      seen.add(dir);
+      let entries;
+      try { entries = await fs.promises.readdir(dir, { withFileTypes: true }); } catch { continue; }
+      for (const e of entries) {
+        const full = path.join(dir, e.name);
+        if (validApp(full)) return { app: full, cli: findCliFor(full) };
+        if (e.isDirectory() && !e.name.endsWith('.app') && !SKIP.has(e.name) && !(e.name.startsWith('.') && e.name !== '.local') && depth < 5) queue.push([full, depth + 1]);
+      }
+    }
+  }
+  return null;
+}
+function findCliFor(app) { return cliNextTo(app) || null; }
 
 function run(file, args, opts = {}) {
   return new Promise(resolve => {
@@ -148,6 +220,8 @@ async function status() {
     installed: Boolean(cli || app),
     cli: Boolean(cli),
     app: Boolean(app),
+    appPath: app || null,
+    chosenApp: chosen.app || null,
     cliVersion,
     latest: latest ? latest.version : null,
     releasesPage: latest ? latest.url : RELEASES_PAGE,
@@ -178,14 +252,14 @@ async function startBridge(projectFile) {
   const app = findApp();
   if (!app) {
     return { ok: false, reason: findCli()
-      ? 'Found filmcraft-cli, but not the FilmCraft app. Install the FilmCraft app (same version as the CLI), then click Connect again.'
-      : 'FilmCraft is not installed.' };
+      ? 'Found filmcraft-cli, but not the FilmCraft app. Click "Find it on my computer" or "Choose where it is". If it is not installed, install the FilmCraft app (same version as the CLI).'
+      : 'FilmCraft was not found. Click "Find it on my computer" or "Choose where it is".' };
   }
   const args = ['--control', String(control.port)];
   if (projectFile) args.push(projectFile); else args.push('--empty');
   const env = { ...process.env, FILMCRAFT_CONTROL_TOKEN: control.token };
   // The token goes in the environment, never on the command line, where other processes can read it.
-  const bin = process.platform === 'darwin' ? path.join(app, 'Contents', 'MacOS', 'FilmCraft') : app;
+  const bin = appBin(app);
   spawn(bin, args, { detached: true, stdio: 'ignore', env }).unref();
   for (let i = 0; i < 40; i++) {
     if (await portOpen(control.port)) return { ok: true };
@@ -221,6 +295,6 @@ async function renderFrame(seconds, outDir) {
 }
 
 module.exports = {
-  controlFile, readControl, findCli, findApp, status, startBridge, inspectSequence, renderFrame,
+  controlFile, readControl, findCli, findApp, status, setPaths, getPaths, search, validApp, cliNextTo, startBridge, inspectSequence, renderFrame,
   portOpen, newer, RELEASES_PAGE
 };
