@@ -210,7 +210,26 @@ function openTerminal(command) {
   });
 }
 
-function systemPrompt({ projectDir, toolkitDir, filmcraft, brand }) {
+// The job behind Setup's "Find it on this computer": look for toolkit parts the person already
+// has, and connect them where the toolkit's check looks. Never move, delete or download.
+function setupPrompt({ toolkitDir }) {
+  return [
+    'You are the setup helper inside Scale Video Editor. The person says some parts of the Scale Video Toolkit are already on this computer.',
+    `The toolkit is at ${toolkitDir}. Its check is tools/verify-install.sh: read it first, to see exactly where and how it looks for each part. install.sh and docs/ say where each part belongs.`,
+    'For each part you are given: search for it on this computer. Start with Spotlight (mdfind), then look in the likely places (the home folder, ~/GitHub, ~/Documents, ~/Downloads, ~/.local, ~/.config, /Applications, /opt/homebrew), then wider if needed.',
+    'When you find a part, connect it where the check expects it: a symbolic link, or a path or setting the toolkit documents. Do not copy large folders when a link works.',
+    'Never move, rename, overwrite or delete the person’s own files. If the place the check expects already has something in it, leave it and say so.',
+    'Never install, download or buy anything. If a part is not on this computer, say "not found" for it: the person can click Install afterwards.',
+    'Keys: never read, print, copy or move an API key or password, and never open a file only to look for one. For a key row, you may only say whether the Keychain already has the toolkit’s entry (security find-generic-password -s <service> without -w), and otherwise say the person adds it with the command on the Setup page.',
+    'An ElevenLabs voice ID is not a secret. If you find the person’s voice ID in an older settings file, you may put it in voice_id in ~/.config/scale-video-toolkit/voice.json; keep every other field.',
+    'Do not play sound and do not open windows.',
+    'When you are done, run tools/verify-install.sh again and end with a short list: one line per part, "connected: <where>" or "not found".'
+  ].join('\n');
+}
+
+function systemPrompt(ctx) {
+  if (ctx.purpose === 'setup') return setupPrompt(ctx);
+  const { projectDir, toolkitDir, filmcraft, brand, voice } = ctx;
   const lines = [
     'You are the agent inside Scale Video Editor, a desktop app where a person chats with you while a video is made.',
     `The project folder is: ${projectDir}`,
@@ -225,6 +244,7 @@ function systemPrompt({ projectDir, toolkitDir, filmcraft, brand }) {
     brand
       ? `Brand: make this video in the "${brand.name}" brand. Read ${brand.file} in the project folder first and use its colors, fonts, shapes and rules for every title, lower third, caption, chart and end card${brand.logo ? `. The logo is ${brand.logo}: use it as it is` : ''}. Do not add colors or fonts the guide does not name. If a font is not installed, use the closest free match and say which.`
       : null,
+    voice ? voice : null,
     'Rules: do not play sound out loud, do not open new windows, do not publish or upload anything, and do not run anything that costs money without asking first.',
     'Look at frames of anything you render before you call it done, and say plainly what you did not check.',
     'Keep replies short. The person sees your messages in a chat panel beside the preview.'
@@ -254,6 +274,7 @@ function claudeArgs(ctx) {
   }
   if (ctx.resume) args.push('--resume', ctx.resume);
   if (ctx.toolkitDir) args.push('--add-dir', ctx.toolkitDir);
+  for (const d of ctx.addDirs || []) args.push('--add-dir', d);
   return args;
 }
 
@@ -282,7 +303,8 @@ function codexArgs(ctx) {
   if (ctx.resume) {
     return ['exec', 'resume', '--json', '--skip-git-repo-check', ...access, ...cfg, ctx.resume, '-'];
   }
-  return ['exec', '--json', '--skip-git-repo-check', '-C', ctx.projectDir, ...access, ...cfg, '-'];
+  const dirs = (ctx.addDirs || []).flatMap(d => ['--add-dir', d]);
+  return ['exec', '--json', '--skip-git-repo-check', '-C', ctx.projectDir, ...access, ...dirs, ...cfg, '-'];
 }
 
 // Cursor reads MCP servers from .cursor/mcp.json in the workspace.

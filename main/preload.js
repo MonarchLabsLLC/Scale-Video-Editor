@@ -48,6 +48,16 @@ contextBridge.exposeInMainWorld('sve', {
     trash: id => invoke('projects:trash', id),
     duplicate: id => invoke('projects:duplicate', id)
   },
+  voices: {
+    get: () => invoke('voices:get'),
+    set: slots => invoke('voices:set', slots)
+  },
+  setup: {
+    pickFolder: () => invoke('setup:pickFolder'),
+    find: opts => invoke('setup:find', opts),
+    stop: () => invoke('setup:stop'),
+    onEvent: fn => { const l = (_e, d) => fn(d); ipcRenderer.on('setup:event', l); return () => ipcRenderer.removeListener('setup:event', l); }
+  },
   agents: {
     detect: () => invoke('agents:detect'),
     models: (id, opts) => invoke('agents:models', id, opts),

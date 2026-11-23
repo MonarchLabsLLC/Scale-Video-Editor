@@ -13,6 +13,7 @@ const guide = require('./guide');
 const toolkit = require('./toolkit');
 const brands = require('./brands');
 const models = require('./models');
+const voices = require('./voices');
 
 app.setName('Scale Video Editor');
 const APP_ICON = path.join(__dirname, '..', 'renderer', 'assets', 'app-icon.png');
@@ -38,7 +39,7 @@ protocol.registerSchemesAsPrivileged([
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 // models: { <agent id>: { model, effort } }, the model and effort chosen for each agent.
-const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, access: 'standard', toolkitDir: '', brand: '' };
+const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, voice: '', access: 'standard', toolkitDir: '', brand: '' };
 
 function readSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) }; } catch { return { ...DEFAULT_SETTINGS }; }
@@ -135,6 +136,7 @@ async function takeSnapshots() {
   await js("document.querySelector('.model-pick .mini-select')?.click()"); await wait(400); await shot('1e-model-menu');
   await js("document.body.click()"); await wait(200);
   await js("document.querySelector('.model-pick .effort-btn')?.click()"); await wait(400); await shot('1f-effort-menu');
+  await js("document.body.click(); document.querySelector('.voice-pick .mini-select')?.click()"); await wait(400); await shot('1g-voice-menu');
   await js("document.body.click()");
   await js("document.querySelector('.pcard .more-btn')?.click()"); await wait(200); await shot('1b-menu');
   await js("[...document.querySelectorAll('.pop-menu .menu-item')].find(b => b.textContent.startsWith('Delete'))?.click()"); await wait(200); await shot('1c-delete');
@@ -149,6 +151,9 @@ async function takeSnapshots() {
   await js("window.__sve.refreshKit(true)"); await wait(6000);
   await js("window.__sve.go({ view: 'tools', tool: 'voice' })"); await wait(600); await shot('4b-tools');
   await js("window.__sve.go({ view: 'setup' })"); await wait(300); await shot('4c-setup');
+  await js("window.__sve.go({ view: 'setup' })"); await wait(1500); await shot('4c2-setup-loaded');
+  await js("findSheet([{ part: 'WhisperX', detail: 'not installed' }, { part: 'Herk', detail: 'not installed' }])"); await wait(300); await shot('4d-find-sheet');
+  await js("document.querySelector('#overlay').classList.add('hidden'); document.querySelector('#overlay').innerHTML = ''");
   await js("window.__sve.go({ view: 'settings' })"); await wait(300); await js("document.querySelectorAll('*').forEach(e => { if (e.scrollTop) e.scrollTop = 0; })"); await shot('5-settings');
   await js("window.__sve.state.update = { status: 'available', current: '0.1.2', latest: '0.1.3', message: '' }; drawUpdateSlot(); window.__sve.go({ view: 'settings' })"); await wait(300); await shot('5b-update-notice');
   await js("window.__sve.state.update = null; drawUpdateSlot()");
@@ -244,6 +249,41 @@ function scanSite(url) {
   });
 }
 
+let finder = null;
+// Runs one agent turn that searches this computer for toolkit parts and connects what it finds.
+// Uses Claude Code or Codex (they can run commands); events go to the window as 'setup:event'.
+async function startFinder(parts, folder) {
+  if (finder) throw new Error('The agent is already looking. Wait for it, or click Stop.');
+  const dir = toolkitDir();
+  if (!dir) throw new Error('Find the Scale Video Toolkit folder first.');
+  const settings = readSettings();
+  const found = await agents.detect();
+  const usable = id => found.some(a => a.id === id && a.installed && a.connected !== false);
+  const engine = ['claude', 'codex'].includes(settings.engine) && usable(settings.engine) ? settings.engine : ['claude', 'codex'].find(usable);
+  if (!engine) throw new Error('This needs Claude Code or Codex, installed and connected. Set one up in Settings.');
+  const list = (parts || []).slice(0, 40).map(p => `- ${String(p.part).slice(0, 120)}${p.detail ? ` (the check says: ${String(p.detail).slice(0, 300)})` : ''}`).join('\n');
+  const where = folder && fs.existsSync(folder) ? `The person says to look in this folder first: ${folder}. Search inside it before anywhere else.` : 'The person did not name a folder: search the whole computer.';
+  const work = path.join(app.getPath('userData'), 'setup-agent');
+  fs.mkdirSync(work, { recursive: true });
+  const ctx = {
+    purpose: 'setup', engine, ...pickModel(engine, {}, settings), access: settings.access,
+    projectDir: work, resume: null, toolkitDir: dir, filmcraft: false, mcpScript: mcpScript(),
+    addDirs: [os.homedir()]
+  };
+  const prompt = `Find these parts on this computer and connect them for the toolkit:\n${list}\n\n${where}`;
+  send('setup:event', { kind: 'start', engine });
+  return new Promise(resolve => {
+    finder = agents.runTurn(ctx, prompt, ev => {
+      send('setup:event', ev);
+      if (ev.kind === 'done') {
+        finder = null;
+        toolkit.verify(settings.toolkitDir).then(result => { send('setup:event', { kind: 'checked', result }); });
+      }
+    });
+    resolve({ ok: true, engine });
+  });
+}
+
 // The model list for one agent, read from that agent on this computer.
 function modelList(id, refresh) {
   const engine = agents.ENGINES[id];
@@ -288,6 +328,18 @@ function registerIpc() {
     return { code, result };
   });
   ipcMain.handle('toolkit:stop', () => toolkit.stopFix());
+
+  /* ---------- voices (ElevenLabs voice IDs, not secrets) ---------- */
+  ipcMain.handle('voices:get', () => voices.get());
+  ipcMain.handle('voices:set', (_e, slots) => voices.set(slots));
+
+  /* ---------- "Find it on this computer": the agent looks for parts already installed ---------- */
+  ipcMain.handle('setup:pickFolder', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Where are these parts? Choose a folder to search', properties: ['openDirectory'] });
+    return r.canceled ? null : r.filePaths[0];
+  });
+  ipcMain.handle('setup:find', (_e, { parts, folder }) => startFinder(parts, folder));
+  ipcMain.handle('setup:stop', () => { if (finder) { try { finder.stop(); } catch {} finder = null; } return true; });
   ipcMain.handle('toolkit:choose', async () => {
     const r = await dialog.showOpenDialog(win, { title: 'Choose the Scale Video Toolkit folder', properties: ['openDirectory'] });
     if (r.canceled || !r.filePaths[0]) return { ok: false };
@@ -336,7 +388,7 @@ function registerIpc() {
   ipcMain.handle('projects:get', (_e, id) => projects.get(id));
   ipcMain.handle('projects:update', (_e, id, patch) => {
     const allowed = {};
-    for (const k of ['engine', 'model', 'brand']) if (k in patch) allowed[k] = patch[k];
+    for (const k of ['engine', 'model', 'brand', 'voice']) if (k in patch) allowed[k] = patch[k];
     if ('engine' in patch) allowed.session = null; // a session belongs to one agent
     return projects.update(id, allowed);
   });
@@ -392,7 +444,8 @@ function registerIpc() {
       toolkitDir: toolkitDir(),
       filmcraft: fcStatus.bridge,
       mcpScript: mcpScript(),
-      brand: project.brand ? brands.copyInto(project.brand, project.dir) : null
+      brand: project.brand ? brands.copyInto(project.brand, project.dir) : null,
+      voice: (voices.forPrompt(project.voice != null ? project.voice : settings.voice) || {}).line || null
     };
     const handle = agents.runTurn(ctx, full, ev => {
       if (ev.kind === 'session' && ev.id && ev.id !== project.session) {

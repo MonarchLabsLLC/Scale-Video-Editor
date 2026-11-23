@@ -9,6 +9,7 @@ const TICKS = 254016000000;
 const state = {
   env: null,
   models: {},
+  voices: null,
   projects: [],
   fc: null,
   route: { view: 'home' },
@@ -490,7 +491,7 @@ function viewHome() {
     h('h1', { class: 'hero', html: 'Any video you can <em>describe.</em>' }),
     h('p', { class: 'lede' }, 'Say what you want to make. Your agent picks the tools and builds it while you watch, and FilmCraft holds the timeline.'),
     composer({
-      key: 'home', big: true, footLeft: [picker, modelPicker({ engine: chosen }), bpick],
+      key: 'home', big: true, footLeft: [picker, modelPicker({ engine: chosen }), voicePicker({ value: state.env?.settings?.voice || '', onChange: async v => { state.env.settings = await api.setSettings({ voice: v }); } }), bpick],
       placeholder: 'Describe your video, or pick a kind of video below. Drop footage, a script or a screenshot here.',
       onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, brand, prompt: text, attachments: files })
     }),
@@ -775,7 +776,7 @@ function viewProject(id) {
       placeholder: busy ? 'The agent is working…' : 'Ask for a change, or say what to make next.',
       onSubmit: (text, files) => sendTurn(id, text, files),
       onStop: () => api.agent.stop(id),
-      footLeft: [picker, modelPicker({ engine: project.engine }), bpick]
+      footLeft: [picker, modelPicker({ engine: project.engine }), voicePicker({ value: project.voice != null ? project.voice : (state.env?.settings?.voice || ''), onChange: async v => { await api.projects.update(id, { voice: v }); await refreshProjects(); toast('From the next message, the agent uses this voice.'); } }), bpick]
     })));
   const right = h('section', { class: 'ws-right', id: 'preview' });
   const ws = h('div', { class: 'ws' }, left, right);
@@ -969,6 +970,7 @@ function viewSettings() {
     h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'Your agent, your keys.'),
     h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use. Click Connect, sign in on the agent’s own page, and it uses your own subscription.'),
     updateSection(),
+    voicesSection(),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Agents')),
     h('div', { class: 'agent-rows' }, env.agents.map(a => agentRow(a, s, set))),
     h('div', { style: { marginTop: '10px' } }, h('button', { class: 'btn small ghost', onclick: async () => { await refreshEnv(); render(); toast('Checked again.'); } }, 'Check again')),
@@ -1401,10 +1403,11 @@ function kitLine(r) {
   if (r.youRun) actions.push(
     h('button', { class: 'btn small', onclick: async () => { await api.copy(r.youRun); toast('Command copied. Paste it in Terminal, then paste your key when it asks.', 5000); } }, 'Copy command'),
     h('button', { class: 'btn small primary', onclick: () => api.toolkit.terminal() }, 'Open Terminal'));
-  if (r.file) actions.push(h('button', { class: 'btn small primary', onclick: async () => { const e = await api.toolkit.openFile(r.file); if (e) toast(e, 5000); } }, 'Open voice.json'));
+  if (r.file) actions.push(h('button', { class: 'btn small primary', onclick: () => go({ view: 'settings' }) }, 'Set up voices'));
+  if (r.status !== 'ok' && r.status !== 'na') actions.unshift(h('button', { class: 'btn small ghost', title: 'Already on this computer? Your agent looks for it and connects it.', onclick: () => findSheet([r]) }, 'I have it: find it'));
   let detail = r.detail.replace(/;?\s*run: .*$/, '').replace(/^you run: .*$/, '');
   if (r.youRun) detail = 'Add it yourself in Terminal: the command asks for the key and keeps it in your Mac’s Keychain. The editor never sees it.';
-  if (r.file) detail = 'Paste your ElevenLabs voice ID into voice_id in this file and save. A voice ID is not a secret.';
+  if (r.file) detail = 'Add your ElevenLabs voice ID in Settings → Voices: a default and up to two alternates. A voice ID is not a secret.';
   return setupLine({ status, title: r.part, detail, actions });
 }
 
@@ -1445,11 +1448,128 @@ function viewSetup() {
     h('div', { class: 'slist' }, app),
     kit?.unsupported ? h('div', { class: 'kit-note' }, 'The toolkit’s detailed check runs on macOS only.') : null,
     kit?.error ? h('div', { class: 'kit-note' }, `The toolkit check did not finish: ${kit.error}`) : null,
-    need.length ? [h('div', { class: 'section-head' }, h('h2', { class: 'section' }, `Needs you (${need.length})`)), h('div', { class: 'slist' }, need.map(kitLine))] : null,
-    optional.length ? [h('div', { class: 'section-head' }, h('h2', { class: 'section' }, `Optional (${optional.length})`)),
+    (need.length || optional.length) ? h('div', { class: 'find-banner' },
+      h('div', { class: 'grow' }, h('strong', null, 'Already installed some of this?'),
+        h('p', { class: 'fh' }, 'Your agent can search this computer, or a folder you choose, and connect what it finds. It never moves or deletes your files and never downloads anything. Whatever it cannot find keeps its Install button.')),
+      h('button', { class: 'btn primary', onclick: () => findSheet([...need, ...optional]) }, 'Let the agent find them')) : null,
+    need.length ? [h('div', { class: 'section-head' }, h('h2', { class: 'section' }, `Needs you (${need.length})`),
+      h('button', { class: 'btn small ghost', onclick: () => findSheet(need) }, 'Find these on my computer')), h('div', { class: 'slist' }, need.map(kitLine))] : null,
+    optional.length ? [h('div', { class: 'section-head' }, h('h2', { class: 'section' }, `Optional (${optional.length})`),
+      h('button', { class: 'btn small ghost', onclick: () => findSheet(optional) }, 'Find these on my computer')),
       h('p', { class: 'fh', style: { marginTop: '-6px' } }, 'Install these when you want the kind of video they make.'), h('div', { class: 'slist' }, optional.map(kitLine))] : null,
     ok.length ? h('details', { class: 'sready' }, h('summary', null, `Ready (${ok.length})`), h('div', { class: 'slist' }, ok.map(kitLine))) : null,
     kit?.summary ? h('p', { class: 'fh', style: { marginTop: '24px' } }, 'Toolkit check: ', kit.summary) : null);
+}
+
+/* "I have it: find it": the agent searches this computer and connects what it finds */
+function findSheet(rows) {
+  const overlay = $('#overlay');
+  const parts = rows.map(r => ({ part: r.part, detail: r.detail }));
+  let folder = null;
+  const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; render(); };
+  const folderText = h('span', { class: 'fh' }, 'Where: the whole computer.');
+  const log = h('div', { class: 'find-log hidden' });
+  const status = h('span', { class: 'fh' }, '');
+  const startBtn = h('button', { class: 'btn primary' }, 'Start looking');
+  const stopBtn = h('button', { class: 'btn hidden', onclick: () => api.setup.stop() }, 'Stop');
+  const closeBtn = h('button', { class: 'btn', onclick: close }, 'Close');
+  const pickBtn = h('button', { class: 'btn small', onclick: async () => {
+    const d = await api.setup.pickFolder();
+    if (d) { folder = d; folderText.textContent = `Where: ${d.replace(/^\/Users\/[^/]+/, '~')} first, then the rest of the computer if needed.`; }
+  } }, 'Choose a folder…');
+  const line = (cls, text) => { log.append(h('div', { class: 'fl ' + cls }, text)); log.scrollTop = log.scrollHeight; };
+  let off = null;
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true; pickBtn.disabled = true;
+    log.classList.remove('hidden'); stopBtn.classList.remove('hidden');
+    status.textContent = 'Starting the agent…';
+    off = api.setup.onEvent(ev => {
+      if (ev.kind === 'start') status.textContent = `${agentInfo(ev.engine).name} is looking. This can take a few minutes.`;
+      else if (ev.kind === 'text') line('t', ev.text);
+      else if (ev.kind === 'tool') line('k', `${ev.name}${ev.detail ? ': ' + ev.detail : ''}`);
+      else if (ev.kind === 'notice') line('k', ev.text || '');
+      else if (ev.kind === 'done') { status.textContent = ev.ok === false ? (ev.error || 'The agent stopped.') : 'Done. Checking this computer again…'; stopBtn.classList.add('hidden'); }
+      else if (ev.kind === 'checked') {
+        state.kit = ev.result; saveChecks();
+        const now = rows.map(r => (ev.result.rows || []).find(x => x.part === r.part)).filter(Boolean);
+        const ready = now.filter(r => r.status === 'ok').length;
+        status.textContent = `${ready} of ${rows.length} ready now.${ready < rows.length ? ' The rest keep their Install button.' : ''}`;
+        startBtn.classList.add('hidden'); closeBtn.classList.add('primary');
+        off && off(); off = null; renderSidebar();
+      }
+    });
+    try { await api.setup.find({ parts, folder }); }
+    catch (err) { status.textContent = String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''); startBtn.disabled = false; pickBtn.disabled = false; stopBtn.classList.add('hidden'); off && off(); off = null; }
+  });
+  overlay.innerHTML = '';
+  overlay.onclick = null;
+  overlay.append(h('div', { class: 'sheet confirm wide', role: 'dialog', 'aria-modal': 'true' },
+    h('div', { class: 'confirm-body' },
+      h('p', { class: 'eyebrow' }, 'Already on this computer'),
+      h('h2', null, rows.length === 1 ? `Find ${rows[0].part}` : `Find ${rows.length} parts`),
+      h('p', { class: 'fh' }, 'Your agent searches this computer and connects what it finds where the toolkit looks (with a link, so nothing is moved). It never deletes or downloads anything, and it never reads your keys. Whatever it cannot find stays “not installed”, and you can click Install.'),
+      h('ul', { class: 'find-parts' }, rows.map(r => h('li', null, r.part))),
+      h('div', { class: 'row-gap', style: { alignItems: 'center' } }, pickBtn, folderText),
+      log),
+    h('div', { class: 'sheet-foot' }, status, h('span', { class: 'grow' }), stopBtn, closeBtn, startBtn)));
+  overlay.classList.remove('hidden');
+}
+
+/* Voices: a default ElevenLabs voice and two alternates (voice IDs are not secrets) */
+async function loadVoices() { try { state.voices = await api.voices.get(); } catch { state.voices = null; } return state.voices; }
+function voiceSlotsSet() { return (state.voices?.slots || []).filter(s => s.id); }
+function voiceLabel(s) { return s ? `${s.name || s.label}${s.key === 'default' ? ' (default)' : ''}` : ''; }
+function voicesSection() {
+  const slots = state.voices?.slots;
+  if (!state.voices) { loadVoices().then(() => { if (state.route.view === 'settings') render(); }); }
+  const inputs = (slots || []).map(s => ({
+    s,
+    name: h('input', { class: 'vin', value: s.name, placeholder: s.key === 'default' ? 'Name, for example Mike' : 'Name, for example Female narrator', maxlength: 60 }),
+    id: h('input', { class: 'vin mono', value: s.id, placeholder: 'Voice ID from ElevenLabs', spellcheck: 'false', autocomplete: 'off' })
+  }));
+  const save = async () => {
+    try {
+      state.voices = await api.voices.set(inputs.map(x => ({ key: x.s.key, name: x.name.value, id: x.id.value })));
+      toast('Voices saved.'); refreshKit(true); render();
+    } catch (err) { toast(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), 6000); }
+  };
+  return [
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Voices')),
+    h('div', { class: 'field' },
+      h('div', { class: 'fh', style: { marginTop: 0 } }, 'Your ElevenLabs voices for voiceovers. Open a voice on the ElevenLabs website and copy its voice ID. The default is used unless you pick another voice under the prompt box. A voice ID is not a secret; your ElevenLabs key stays in your Mac’s Keychain.'),
+      !slots ? h('div', { class: 'fh' }, 'Loading…') : h('div', { class: 'vgrid' },
+        inputs.flatMap(x => [h('div', { class: 'vslot' }, x.s.key === 'default' ? 'Default · No. 1' : `${x.s.label}`), x.name, x.id])),
+      h('div', { class: 'row-gap' }, h('button', { class: 'btn small primary', onclick: save }, 'Save voices'),
+        state.voices?.file ? h('span', { class: 'fh', style: { margin: 0 } }, `Saved in ${state.voices.file.replace(/^\/Users\/[^/]+/, '~')}`) : null))
+  ];
+}
+function voicePicker({ value, onChange, up = true }) {
+  const wrap = h('div', { class: 'agent-pick voice-pick' });
+  const btn = h('button', { class: 'mini-select', type: 'button', title: 'Choose the voice for the voiceover' }, h('span', { class: 'vp-label' }, ''), h('span', { style: { opacity: .5 } }, '▾'));
+  wrap.append(btn);
+  const relabel = () => {
+    const set = voiceSlotsSet();
+    const cur = set.find(s => s.key === (value || 'default')) || set[0];
+    btn.querySelector('.vp-label').textContent = cur ? `Voice: ${cur.name || cur.label}` : 'Voice: set up';
+  };
+  if (state.voices) relabel(); else loadVoices().then(relabel);
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!voiceSlotsSet().length) { go({ view: 'settings' }); return; }
+    const open = wrap.querySelector('.menu');
+    if (open) { open.remove(); return; }
+    const menu = h('div', { class: 'menu' + (up ? '' : ' down') });
+    menu.append(h('div', { class: 'menu-head' }, 'Voice for the voiceover'));
+    for (const s of voiceSlotsSet()) menu.append(h('button', { class: 'menu-item', type: 'button', onclick: ev => { ev.stopPropagation(); menu.remove(); value = s.key === 'default' ? '' : s.key; relabel(); onChange(value); } },
+      h('span', null, h('div', { class: 'mi-name' }, s.name || s.label), h('div', { class: 'mi-sub' }, s.key === 'default' ? 'Default · No. 1' : s.label)),
+      (value || 'default') === s.key ? h('span', { class: 'mi-check' }, '✓') : null));
+    menu.append(h('div', { class: 'menu-sep' }), h('button', { class: 'menu-item', type: 'button', onclick: () => go({ view: 'settings' }) }, h('span', { class: 'mi-sub' }, 'Set up voices…')));
+    wrap.append(menu);
+    fitMenu(menu, btn);
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  });
+  return wrap;
 }
 
 /* Running a fix, with its log in a sheet */
