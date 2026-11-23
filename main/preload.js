@@ -5,6 +5,14 @@ const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
 contextBridge.exposeInMainWorld('sve', {
   env: () => invoke('env:get'),
   setSettings: patch => invoke('settings:set', patch),
+  update: {
+    get: () => invoke('update:get'),
+    check: () => invoke('update:check'),
+    apply: () => invoke('update:apply'),
+    restart: () => invoke('update:restart'),
+    onState: fn => { const h = (_e, s) => fn(s); ipcRenderer.on('update:state', h); return () => ipcRenderer.removeListener('update:state', h); }
+  },
+  onNav: fn => { const h = (_e, r) => fn(r); ipcRenderer.on('nav', h); return () => ipcRenderer.removeListener('nav', h); },
   projects: {
     list: () => invoke('projects:list'),
     create: opts => invoke('projects:create', opts),

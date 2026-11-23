@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, protocol, net, Menu } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -8,8 +8,10 @@ const { pathToFileURL } = require('node:url');
 const agents = require('./agents');
 const filmcraft = require('./filmcraft');
 const projects = require('./projects');
+const updater = require('./updater');
 
 app.setName('Scale Video Editor');
+const APP_ICON = path.join(__dirname, '..', 'renderer', 'assets', 'app-icon.png');
 
 // Apps started from Finder or the Dock get a short PATH. Read the login shell's PATH once so
 // claude, codex and filmcraft-cli are found the same way a terminal finds them.
@@ -69,6 +71,7 @@ function createWindow() {
     minWidth: 1080,
     minHeight: 680,
     title: 'Scale Video Editor',
+    icon: APP_ICON,
     backgroundColor: '#fcfcfa',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: { x: 16, y: 18 },
@@ -86,6 +89,11 @@ function createWindow() {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', e => e.preventDefault());
+  // Check for a new version a few seconds after every start, then every six hours.
+  if (!SNAPSHOT_DIR) win.webContents.once('did-finish-load', () => {
+    setTimeout(() => updater.check(), 4000);
+    setInterval(() => updater.check(), 6 * 60 * 60 * 1000).unref();
+  });
   if (SNAPSHOT_DIR) win.webContents.once('did-finish-load', () => takeSnapshots().catch(err => { console.error(err); app.exit(1); }));
 }
 
@@ -104,6 +112,7 @@ async function takeSnapshots() {
   await wait(1800);
   await shot('1-home');
   await js("window.__sve.go({ view: 'formats' })"); await shot('2-formats');
+  await js("window.__sve.state.cat = 'marketing'; window.__sve.go({ view: 'formats' })"); await shot('2b-marketing'); await js("window.__sve.state.cat = 'all'");
   await js("window.__sve.go({ view: 'home' }); window.__sve.openInterview(window.SVE_FORMATS.find(f => f.id === 'short'))"); await shot('3-interview');
   await js("document.querySelector('#overlay').click()");
   const first = projects.list()[0];
@@ -114,6 +123,10 @@ async function takeSnapshots() {
 }
 
 function registerIpc() {
+  ipcMain.handle('update:get', () => updater.get());
+  ipcMain.handle('update:check', () => updater.check());
+  ipcMain.handle('update:apply', () => updater.apply());
+  ipcMain.handle('update:restart', () => updater.restart());
   ipcMain.handle('env:get', async () => ({
     platform: process.platform,
     version: app.getVersion(),
@@ -217,7 +230,23 @@ function registerIpc() {
   ipcMain.handle('os:openExternal', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
 }
 
+// The standard menus, plus "Check for Updates…" where a Mac app keeps it.
+function buildMenu() {
+  const checkItem = { label: 'Check for Updates…', click: () => { updater.check(); if (win) win.webContents.send('nav', { view: 'settings' }); } };
+  const template = [
+    ...(process.platform === 'darwin' ? [{ label: app.name, submenu: [{ role: 'about' }, checkItem, { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] }] : []),
+    { role: 'fileMenu' }, { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' },
+    { role: 'help', submenu: [...(process.platform === 'darwin' ? [] : [checkItem]), { label: 'Scale Video Editor on GitHub', click: () => shell.openExternal('https://github.com/MonarchLabsLLC/Scale-Video-Editor') }] }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 app.whenReady().then(() => {
+  updater.init(app, state => { if (win && !win.isDestroyed()) win.webContents.send('update:state', state); });
+  buildMenu();
+  // When run from source the Dock shows Electron's own icon; show the Scale.gg mark instead.
+  if (process.platform === 'darwin' && !app.isPackaged && app.dock) app.dock.setIcon(APP_ICON);
+  app.setAboutPanelOptions({ applicationName: 'Scale Video Editor', applicationVersion: app.getVersion(), iconPath: APP_ICON });
   loadShellPath();
   projects.setRoot(process.env.SVE_PROJECTS_ROOT || path.join(app.getPath('documents'), 'Scale Video Editor'));
   protocol.handle('sve-media', req => {

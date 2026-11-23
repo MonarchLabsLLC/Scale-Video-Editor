@@ -40,6 +40,13 @@ The editor never modifies FilmCraft. It uses only FilmCraft's public CLI, contro
 
 The FilmCraft control token is kept in `~/.config/filmcraft/control.env` (owner-only). It is passed to FilmCraft and its CLI through the environment only. It never appears in an agent's configuration, on a command line or in the window.
 
+### Updates
+
+The editor checks GitHub for a new version every time it starts, and every six hours while it is open. **Settings → Check for updates** (or **Check for Updates…** in the app menu) checks at once. When a new version is out, a card in the sidebar says so: click **Update now**, then **Restart to finish**.
+
+- Installed from source (the install prompt): it runs `git pull --ff-only` on `main`, and `npm install` when the dependencies changed. It does not update a copy that has uncommitted changes or is on another branch; it tells you why instead.
+- Installed from a `.dmg`, `.exe` or `.AppImage`: it downloads the new release in the background and installs it on restart. macOS allows this only for a code-signed app, so until the releases are signed the Mac version offers the download page instead.
+
 ### Access
 
 - **Standard** (default): Codex runs in its workspace sandbox with network on. Claude Code runs with edits accepted and a fixed list of allowed tools (files, shell, web, FilmCraft).
@@ -53,9 +60,11 @@ If the [Scale Video Toolkit](https://scale.gg) is installed in `~/Scale-Video-To
 
 ```bash
 npm start      # run the app
-npm test       # unit tests (brief parser, agent arguments and event parsing)
+npm test       # unit tests (brief parser, agent arguments and event parsing, updater)
 npm run dist   # build an installer for this platform into dist/
 ```
+
+On macOS, `npm install` also renames the local Electron copy in `node_modules` to "Scale Video Editor" with the Scale.gg icon (`scripts/brand-dev-app.js`), so the Dock does not say Electron when you run from source.
 
 `SVE_SNAPSHOT=<folder> npm start` renders each screen in a hidden window, saves PNGs to the folder, and quits. `SVE_PROJECTS_ROOT=<folder>` uses another projects folder.
 

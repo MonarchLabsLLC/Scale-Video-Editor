@@ -106,9 +106,22 @@ document.addEventListener('click', e => {
   if (a) { e.preventDefault(); api.os.openExternal(a.getAttribute('href')); }
 });
 
-function pastelFor(format) {
-  const cat = CATS.find(c => c.id === (format.cats || [])[0]);
-  return cat ? cat.pastel : 'cream';
+// The dashboard's tones: each pastel with its own ink. Cards cycle through them by position,
+// so neighbours never share a colour; a category keeps its own pastel.
+const TONES = {
+  peach: ['#f3c9b6', '#3b1d10'], lilac: ['#c5b0f4', '#20143b'], lime: ['#dceeb1', '#1d2a0c'], mint: ['#c8e6cd', '#12301a'],
+  yellow: ['#f3e28a', '#3a3208'], cream: ['#f4ecd6', '#3a2f12'], pink: ['#efd4d4', '#3b1a1a']
+};
+const TONE_CYCLE = ['peach', 'lilac', 'lime', 'mint', 'yellow', 'cream', 'pink'];
+function toneFor(format) { return TONE_CYCLE[Math.max(0, FORMATS.indexOf(format)) % TONE_CYCLE.length]; }
+function toneStyle(tone) { const [bg, ink] = TONES[tone] || TONES.cream; return `--tile-bg:${bg};--tone-ink:${ink};background:${bg};color:${ink}`; }
+function sectionHead(eyebrow, title, text, aside) {
+  return h('div', { class: 'section-head' },
+    h('div', null, h('p', { class: 'eyebrow' }, eyebrow), h('h2', { class: 'section' }, title), text ? h('p', { class: 'section-text' }, text) : null),
+    aside || null);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copied.'); } catch { toast('Could not copy.'); }
 }
 
 function agentInfo(id) {
@@ -286,18 +299,33 @@ function viewHome() {
   const page = h('div', { class: 'page' },
     h('div', { class: 'topdrag' }),
     setupBanner(),
-    h('span', { class: 'eyebrow' }, 'Scale Video Editor'),
-    h('h1', { class: 'hero', html: 'Make <em>something.</em>' }),
-    h('p', { class: 'lede' }, 'Describe the video. Your agent makes it while you watch, and FilmCraft holds the timeline.'),
+    h('p', { class: 'eyebrow' }, 'Scale Video Editor'),
+    h('h1', { class: 'hero', html: 'Any video you can <em>describe.</em>' }),
+    h('p', { class: 'lede' }, 'Say what you want to make. Your agent picks the tools and builds it while you watch, and FilmCraft holds the timeline.'),
     composer({
       key: 'home', big: true, footLeft: picker,
-      placeholder: 'Describe your video, or pick a format below. Drop footage, a script or a screenshot here.',
+      placeholder: 'Describe your video, or pick a kind of video below. Drop footage, a script or a screenshot here.',
       onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, prompt: text, attachments: files })
     }),
-    formatSection(8),
-    recentSection()
+    recentSection(),
+    categoryTiles(),
+    h('section', null,
+      sectionHead('Everything it makes', `${FORMATS.length} kinds of video, one place to ask.`, null,
+        h('button', { class: 'btn small', onclick: () => go({ view: 'formats' }) }, 'Browse by category →')),
+      h('div', { class: 'formats' }, FORMATS.map(formatCard)))
   );
   return page;
+}
+
+function categoryTiles() {
+  return h('section', null,
+    sectionHead('Start here', 'What do you want to make?', 'Pick the closest fit. Each one shows what you hand over, what comes back, and a sentence that gets it started.'),
+    h('div', { class: 'cat-tiles' }, CATS.map(c => h('button', {
+      class: 'cat-tile', style: toneStyle(c.pastel),
+      onclick: () => { state.cat = c.id; go({ view: 'formats' }); }
+    },
+      h('span', { class: 'label-sm cat-count' }, h('span', null, `${FORMATS.filter(f => (f.cats || []).includes(c.id)).length} kinds`), h('span', null, '→')),
+      h('span', null, h('strong', null, c.name), h('span', { class: 'cat-sub' }, c.sub))))));
 }
 
 function nameFrom(text) {
@@ -305,44 +333,54 @@ function nameFrom(text) {
   return words || 'Untitled';
 }
 
-function formatSection(limit) {
-  const tabs = h('div', { class: 'tabs' },
-    h('button', { class: 'tab' + (state.cat === 'all' ? ' on' : ''), onclick: () => { state.cat = 'all'; render(); } }, 'All'),
-    CATS.map(c => h('button', { class: 'tab' + (state.cat === c.id ? ' on' : ''), onclick: () => { state.cat = c.id; render(); } }, c.name)));
-  const list = FORMATS.filter(f => state.cat === 'all' || (f.cats || []).includes(state.cat));
-  const shown = limit ? list.slice(0, limit) : list;
-  const cat = CATS.find(c => c.id === state.cat);
-  return h('section', null,
-    h('div', { class: 'section-head' },
-      h('div', null, h('span', { class: 'eyebrow' }, 'Formats'), h('h2', { class: 'section', style: { marginTop: '8px' } }, cat ? cat.head : 'Pick one. Answer a few questions. Go.')),
-      limit && list.length > limit ? h('button', { class: 'btn small', onclick: () => go({ view: 'formats' }) }, `All ${list.length} formats →`) : null),
-    h('div', { style: { margin: '0 0 16px' } }, tabs),
-    h('div', { class: 'formats' }, shown.map(formatCard)));
-}
-
 function formatCard(f) {
-  return h('button', { class: 'fcard p-' + pastelFor(f), onclick: () => openInterview(f) },
-    h('div', { class: 'frame', html: window.SVE_ART(f.art) }),
-    h('div', { class: 'fshape' }, f.shape),
-    h('div', { class: 'ftitle' }, f.name),
-    h('div', { class: 'fblurb' }, f.blurb));
+  const tone = toneFor(f);
+  const tools = (f.tools || []).map(id => (window.SVE_TOOLS || {})[id]).filter(Boolean);
+  return h('article', { class: 'fcard' },
+    h('div', { class: 'ftop', style: toneStyle(tone) },
+      h('div', { class: 'fart', html: window.SVE_ART(f.art) }),
+      h('span', { class: 'label-sm fshape' }, f.shape)),
+    h('div', { class: 'fbody' },
+      h('h3', { class: 'ftitle' }, f.name),
+      h('p', { class: 'fblurb' }, f.blurb),
+      h('dl', { class: 'fgive' },
+        h('div', null, h('dt', { class: 'label-sm' }, 'You give'), h('dd', null, f.give)),
+        h('div', null, h('dt', { class: 'label-sm' }, 'You get'), h('dd', null, f.get))),
+      tools.length ? h('div', { class: 'tool-pills' }, tools.map(t => h('span', { class: 'tool-pill', title: t.does }, t.name))) : null),
+    h('div', { class: 'fsay' },
+      h('div', { class: 'fsay-head' }, h('span', { class: 'label-sm' }, 'Try saying'),
+        h('button', { class: 'copy-btn', onclick: () => copyText(f.ask) }, 'Copy')),
+      h('q', null, f.ask)),
+    h('div', { class: 'factions' },
+      h('button', { class: 'btn small', title: 'Start a project with this sentence', onclick: () => startProject({ name: f.name, engine: state.env?.settings?.engine || 'claude', format: f.id, prompt: f.ask }) }, 'Use this sentence'),
+      h('button', { class: 'btn small primary', onclick: () => openInterview(f) }, 'Answer the questions →')));
 }
 
 function recentSection() {
   if (!state.projects.length) return null;
   return h('section', null,
-    h('div', { class: 'section-head' }, h('div', null, h('span', { class: 'eyebrow' }, 'Your projects'), h('h2', { class: 'section', style: { marginTop: '8px' } }, 'Pick up where you left off.'))),
+    sectionHead('Your projects', 'Pick up where you left off.'),
     h('div', { class: 'pgrid' }, state.projects.slice(0, 8).map(p => h('button', { class: 'pcard', onclick: () => go({ view: 'project', id: p.id }) },
       h('div', { class: 'thumb' }, p.thumb ? h('img', { src: api.mediaUrl(p.thumb), alt: '' }) : h('img', { class: 'ph', src: 'assets/scale-mark.svg', alt: '' })),
       h('div', { class: 'meta' }, h('div', { class: 'pname' }, p.name), h('div', { class: 'pwhen' }, `${agentInfo(p.engine).name} · edited ${ago(p.updated)} ago`))))));
 }
 
 function viewFormats() {
+  const cat = CATS.find(c => c.id === state.cat);
+  const list = FORMATS.filter(f => !cat || (f.cats || []).includes(cat.id));
+  const tabs = h('div', { class: 'tabs' },
+    h('button', { class: 'tab' + (!cat ? ' on' : ''), onclick: () => { state.cat = 'all'; render(); } }, 'All'),
+    CATS.map(c => h('button', { class: 'tab' + (state.cat === c.id ? ' on' : ''), onclick: () => { state.cat = c.id; render(); } }, c.name)));
+  const opener = cat
+    ? h('div', { class: 'opener', style: toneStyle(cat.pastel) }, h('p', { class: 'label' }, cat.name), h('h1', null, cat.head), h('p', { class: 'opener-sub' }, cat.sub))
+    : h('div', { class: 'opener', style: toneStyle('cream') }, h('p', { class: 'label' }, 'Kinds of video'), h('h1', null, `${FORMATS.length} kinds of video.`),
+      h('p', { class: 'opener-sub' }, 'Say the sentence under one, or answer its questions and your agent gets a complete brief.'));
   return h('div', { class: 'page' }, h('div', { class: 'topdrag' }),
-    h('span', { class: 'eyebrow' }, 'Formats'),
-    h('h1', { class: 'hero' }, `${FORMATS.length} kinds of video.`),
-    h('p', { class: 'lede' }, 'Each one asks you a few questions, then hands your agent a complete brief. Or click Fast prompt to let the agent choose.'),
-    formatSection(0));
+    h('div', { class: 'tabs-row' }, tabs),
+    opener,
+    h('section', null,
+      sectionHead(`${list.length} kinds of video`, 'Pick one and say the sentence under it.'),
+      h('div', { class: 'formats' }, list.map(formatCard))));
 }
 
 /* ---------- interview ---------- */
@@ -401,8 +439,8 @@ function openInterview(f) {
   picker = agentPicker({ value: engine, onChange: onPick });
   const sheet = h('div', { class: 'sheet', role: 'dialog' },
     h('div', { class: 'sheet-top' },
-      h('div', { class: 'frame p-' + pastelFor(f), html: window.SVE_ART(f.art) }),
-      h('div', null, h('span', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
+      h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
+      h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,
     h('div', { class: 'sheet-foot' }, picker, h('span', { class: 'grow' }),
@@ -715,7 +753,7 @@ function viewSettings() {
   const s = env.settings;
   const set = async patch => { state.env.settings = await api.setSettings(patch); render(); };
   const segOf = (key, opts) => h('div', { class: 'seg' }, opts.map(([v, l]) => h('button', { class: s[key] === v ? 'on' : '', onclick: () => set({ [key]: v }) }, l)));
-  return h('div', { class: 'page', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
+  return h('div', { class: 'page compact', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
     h('span', { class: 'eyebrow' }, 'Settings'),
     h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'Your agent, your keys.'),
     h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use, signed in with your own plan.'),
@@ -734,6 +772,7 @@ function viewSettings() {
         : 'Standard: the agent edits files and runs commands in the project, and uses FilmCraft. Codex runs in its workspace sandbox with network on. Claude Code runs with a fixed list of allowed tools.')),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Scale Video Toolkit')),
     h('div', { class: 'field' }, h('div', null, env.toolkitDir ? `Installed at ${env.toolkitDir}. The agent reads its CLAUDE.md for which tool fits each kind of video.` : 'Not found in your home folder. The agent works without it, with fewer specialist tools.')),
+    updateSection(),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Projects folder')),
     h('div', { class: 'field' }, h('div', null, env.projectsRoot), h('div', { class: 'fh' }, 'Each project is a normal folder with media, work and exports inside.')),
     h('p', { style: { color: 'var(--label)', marginTop: '40px', fontSize: '12px' } }, `Scale Video Editor ${env.version || ''} · open source · FilmCraft is a separate Apache-2.0 project by storytold.`));
@@ -741,7 +780,7 @@ function viewSettings() {
 
 function viewFilmcraft() {
   const fc = state.fc || {};
-  return h('div', { class: 'page', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
+  return h('div', { class: 'page compact', style: { maxWidth: '860px' } }, h('div', { class: 'topdrag' }),
     h('span', { class: 'eyebrow' }, 'FilmCraft'),
     h('h1', { class: 'hero', style: { fontSize: '48px' } }, 'The timeline under the chat.'),
     h('p', { class: 'lede' }, 'FilmCraft is a free, open-source video editor. The agent drives it through its MCP server, and you can edit in its window at any time. The editor never changes FilmCraft itself.'),
@@ -759,7 +798,43 @@ function viewFilmcraft() {
 
 /* ---------- start ---------- */
 window.__sve = { go, openInterview, state };
+/* ---------- updates ---------- */
+const UPDATE_LIVE = ['available', 'downloading', 'ready', 'manual'];
+function updateActions(u, small) {
+  const cls = 'btn' + (small ? ' small' : '');
+  if (u.status === 'available') return h('button', { class: cls + ' primary', onclick: () => api.update.apply() }, 'Update now');
+  if (u.status === 'ready') return h('button', { class: cls + ' coral', onclick: () => api.update.restart() }, 'Restart to finish');
+  if (u.status === 'manual') return h('button', { class: cls, onclick: () => api.update.apply() }, 'Download the new version');
+  if (u.status === 'downloading' || u.status === 'checking') return h('button', { class: cls, disabled: true }, u.status === 'checking' ? 'Checking…' : 'Updating…');
+  return h('button', { class: cls, onclick: () => api.update.check() }, 'Check for updates');
+}
+function drawUpdateSlot() {
+  const slot = $('#updateSlot');
+  if (!slot) return;
+  slot.innerHTML = '';
+  const u = state.update;
+  if (!u || !UPDATE_LIVE.includes(u.status)) return;
+  slot.append(h('div', { class: 'update-card' },
+    h('p', { class: 'label-sm' }, u.status === 'ready' ? 'Update ready' : 'Update available'),
+    h('p', { class: 'update-msg' }, u.message),
+    updateActions(u, true)));
+}
+function updateSection() {
+  const u = state.update || { status: 'idle', current: state.env?.version || '' };
+  return [
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Updates')),
+    h('div', { class: 'field' },
+      h('div', null, `Scale Video Editor ${u.current || state.env?.version || ''}`),
+      h('div', { class: 'fh' }, u.message || 'The editor checks for a new version every time it starts.'),
+      u.checkedAt ? h('div', { class: 'fh' }, `Last checked ${ago(u.checkedAt)} ago.`) : null,
+      h('div', { class: 'row-gap' }, updateActions(u, false)))
+  ];
+}
+
 (async function init() {
+  api.update.get().then(u => { state.update = u; drawUpdateSlot(); });
+  api.update.onState(u => { state.update = u; drawUpdateSlot(); if (state.route.view === 'settings') render(); });
+  api.onNav(r => go(r));
   await Promise.all([refreshEnv(), refreshProjects()]);
   const running = await api.agent.running();
   running.forEach(id => state.busy.add(id));

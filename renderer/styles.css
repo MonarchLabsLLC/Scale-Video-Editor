@@ -12,7 +12,7 @@
   --shadow-sm: 0 6px 20px rgba(5, 5, 5, 0.06);
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --ok: #2f9e5b; --warn: #d69a00; --bad: #d4483b;
+  --warning: #d77a3d; --ok: #2f9e5b; --warn: #d69a00; --bad: #d4483b;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -65,13 +65,16 @@ a { color: inherit; text-decoration: none; }
 .page { max-width: 1240px; margin: 0 auto; padding: 44px 48px 64px; }
 .topdrag { position: absolute; inset: 0 0 auto 0; height: 22px; -webkit-app-region: drag; }
 
-.eyebrow { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--label); }
-.eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--coral); }
-h1.hero { font-size: 64px; line-height: 1; letter-spacing: -3px; font-weight: 650; margin: 14px 0 8px; }
-h1.hero em { font-style: normal; color: var(--coral); }
+/* Labels and headings: the dashboard's label-mono and display-tight */
+.eyebrow, .label { margin: 0; font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; }
+.eyebrow { color: var(--warning); }
+.label-sm { font-family: var(--mono); font-weight: 500; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+h1.hero { font-size: 72px; line-height: 0.98; letter-spacing: -0.045em; font-weight: 620; margin: 18px 0 14px; }
+h1.hero em { font-style: normal; color: var(--warning); }
 .lede { font-size: 17px; color: var(--muted); margin: 0 0 28px; max-width: 640px; line-height: 1.45; }
-h2.section { font-size: 28px; letter-spacing: -1px; font-weight: 640; margin: 0; }
-.section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 44px 0 16px; }
+h2.section { font-size: 40px; line-height: 1.02; letter-spacing: -0.045em; font-weight: 620; margin: 10px 0 0; }
+.section-text { margin: 12px 0 0; max-width: 62ch; font-size: 16px; line-height: 1.6; color: var(--muted); }
+.section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 56px 0 24px; }
 
 /* Buttons and pills */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 10px 20px; font-weight: 600; border: 1px solid var(--hair); background: var(--panel); white-space: nowrap; }
@@ -111,23 +114,41 @@ h2.section { font-size: 28px; letter-spacing: -1px; font-weight: 640; margin: 0;
 .agent-logo.claude { background: var(--peach); color: var(--peach-ink); }
 .agent-logo.codex { background: var(--lilac); color: var(--lilac-ink); }
 
-/* Format cards */
-.formats { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.fcard { text-align: left; border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: transform .15s ease, box-shadow .15s ease; }
-.fcard:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-.fcard .frame { aspect-ratio: 16 / 9; border-radius: 14px; background: rgba(255, 255, 255, .45); display: grid; place-items: center; }
-.fcard .frame svg { width: 70%; height: 70%; }
-.fcard .ftitle { font-size: 18px; font-weight: 640; letter-spacing: -0.4px; }
-.fcard .fblurb { font-size: 13px; line-height: 1.4; opacity: .82; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.fcard .fshape { font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; opacity: .75; }
-.p-lilac { background: var(--lilac); color: var(--lilac-ink); }
-.p-lime { background: var(--lime); color: var(--lime-ink); }
-.p-cream { background: var(--cream); color: var(--cream-ink); }
-.p-pink { background: var(--pink); color: var(--pink-ink); }
-.p-mint { background: var(--mint); color: var(--mint-ink); }
-.p-peach { background: var(--peach); color: var(--peach-ink); }
-.p-yellow { background: var(--yellow); color: var(--yellow-ink); }
+/* Format cards: the Scale Plus dashboard's Video Toolkit card */
+.formats { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.fcard { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 24px; border: 1px solid var(--hair); background: var(--soft); }
+.fcard .ftop { position: relative; aspect-ratio: 16 / 9; }
+.fcard .fart, .fcard .fart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fcard .fshape { position: absolute; top: 12px; right: 12px; border-radius: 999px; padding: 4px 8px; background: var(--tone-ink); color: var(--tile-bg); }
+.fcard .fbody { flex: 1; display: grid; align-content: start; gap: 12px; padding: 20px; }
+.fcard .ftitle { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.fcard .fblurb { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.fgive { display: grid; gap: 6px; margin: 0; padding-top: 12px; border-top: 1px solid var(--hair); font-size: 14px; line-height: 1.55; }
+.fgive > div { display: grid; grid-template-columns: 4.75rem minmax(0, 1fr); gap: 8px; }
+.fgive dt { padding-top: 3px; color: var(--muted); }
+.fgive dd { margin: 0; min-width: 0; }
+.tool-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool-pill { border-radius: 999px; border: 1px solid var(--hair); background: var(--paper); padding: 4px 10px; font-size: 12px; font-weight: 500; }
+.fsay { display: grid; gap: 8px; border-top: 1px solid var(--hair); background: var(--paper); padding: 14px 20px 16px; }
+.fsay-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fsay-head .label-sm { color: var(--muted); }
+.fsay q { font-size: 14px; line-height: 1.6; }
+.copy-btn { border-radius: 999px; border: 1px solid var(--hair); padding: 3px 10px; font-size: 12px; font-weight: 600; background: var(--panel); }
+.copy-btn:hover { border-color: var(--label); }
+.factions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; border-top: 1px solid var(--hair); background: var(--paper); padding: 14px 20px; }
 
+/* Category tiles and opener bands */
+.cat-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.cat-tile { min-height: 176px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; border-radius: 24px; padding: 20px; text-align: left; transition: transform .2s ease; }
+.cat-tile:hover { transform: translateY(-4px); }
+.cat-tile .cat-count { display: flex; justify-content: space-between; }
+.cat-tile strong { display: block; font-size: 30px; line-height: 1; font-weight: 620; letter-spacing: -0.045em; }
+.cat-tile .cat-sub { display: block; margin-top: 6px; font-size: 14px; line-height: 1.5; opacity: .85; }
+.tabs-row { margin: 0 0 16px; }
+.opener { border-radius: 28px; padding: 44px 40px; display: grid; gap: 14px; margin-bottom: 8px; }
+.opener h1 { margin: 0; font-size: 64px; line-height: 0.98; font-weight: 620; letter-spacing: -0.045em; }
+.opener .opener-sub { margin: 0; font-size: 18px; line-height: 1.5; max-width: 60ch; }
+@media (prefers-color-scheme: dark) { .fcard .fbody, .fcard { color: var(--ink); } }
 /* Project cards */
 .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .pcard { text-align: left; background: var(--soft); border: 1px solid var(--hair); border-radius: 20px; overflow: hidden; }
@@ -223,7 +244,7 @@ h2.section { font-size: 28px; letter-spacing: -1px; font-weight: 640; margin: 0;
 .sheet { width: min(760px, 100%); max-height: calc(100vh - 64px); overflow: auto; background: var(--paper); border-radius: 28px; box-shadow: var(--shadow); }
 .sheet-top { padding: 24px 28px 18px; display: flex; gap: 18px; align-items: flex-start; }
 .sheet-top .frame { width: 150px; aspect-ratio: 16 / 9; border-radius: 14px; display: grid; place-items: center; flex: none; }
-.sheet-top .frame svg { width: 72%; }
+.sheet-top .frame { overflow: hidden; } .sheet-top .frame svg { width: 100%; height: 100%; }
 .sheet-top h2 { margin: 8px 0 6px; font-size: 30px; letter-spacing: -1.2px; }
 .sheet-top p { margin: 0; color: var(--muted); line-height: 1.45; }
 .sheet-close { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--hair); background: var(--panel); flex: none; }
@@ -270,3 +291,14 @@ details.prompt-preview pre { white-space: pre-wrap; font-family: var(--mono); fo
 .fc-card .btn:not(.ghost) { color: var(--ink); }
 .fc-card .btn.coral { color: #1a0705; }
 .field .seg { align-self: flex-start; }
+
+/* Update notice in the sidebar */
+.update-slot:empty { display: none; }
+.update-card { margin: 0 0 10px; padding: 14px; border-radius: 18px; background: var(--lilac); color: var(--lilac-ink); display: grid; gap: 8px; }
+.update-card .label-sm, .update-card .update-msg { margin: 0; }
+.update-card .update-msg { font-size: 13px; line-height: 1.4; }
+.update-card .btn { justify-self: start; }
+.row-gap { display: flex; gap: 8px; margin-top: 6px; }
+/* Settings and FilmCraft pages: section titles are labels, not page headlines */
+.page.compact .section-head { margin: 36px 0 12px; }
+.page.compact h2.section { font-size: 24px; letter-spacing: -0.03em; }

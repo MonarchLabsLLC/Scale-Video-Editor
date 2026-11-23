@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>Scale Video Editor</title>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#fcfcfa"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="184.5" fill="none" stroke="#e7e7e2" stroke-width="3"/>
+  <g transform="translate(232 232) scale(8.75) rotate(-4 32 32)">
+    <rect x="5" y="5" width="25" height="25" rx="4" fill="#ff6f61"/>
+    <rect x="34" y="5" width="25" height="25" rx="4" fill="#c5b0f4"/>
+    <rect x="5" y="34" width="25" height="25" rx="4" fill="#dceeb1"/>
+    <rect x="34" y="34" width="25" height="25" rx="4" fill="#1f1d3d"/>
+  </g>
+</svg>
