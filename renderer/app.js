@@ -667,7 +667,7 @@ function viewViralFormat(id) {
     h('div', { class: 'vbox' }, h('h3', null, 'Ideas for your niche'),
       h('table', { class: 'vniche' }, h('tbody', null, f.ideas.map(n => h('tr', null, h('td', null, n.who), h('td', null, n.idea)))))),
     h('section', null,
-      sectionHead('Sample script', 'Fill in the blanks.', 'A Mad Lib for this format. Make this video hands it to the agent, which keeps the beats and the jokes and swaps in your business, your customer and your offer, using your brand knowledge documents if you attach them.',
+      sectionHead('Sample script', 'Fill in the blanks.', 'A Mad Lib for this format. Make this video hands it to the agent, which keeps the beats and the jokes and swaps in your business, your customer and your offer, using your brand knowledge documents if you attach them. The words after each colon are examples.',
         h('button', { class: 'btn small', onclick: () => copyText(f.sample) }, 'Copy script')),
       h('pre', { class: 'vsample' }, madlib(f.sample))),
     h('section', null,

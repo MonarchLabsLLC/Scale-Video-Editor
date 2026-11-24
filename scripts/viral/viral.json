@@ -130,93 +130,94 @@
         "aspect": "9:16",
         "prompt": "Photorealistic comedy photo of a cheerful man in his forties with short dark hair and a navy blazer, with a hugely oversized caricature head about three times normal size on a normal body, wide delighted grin, racing down a sunny city sidewalk on an electric scooter, tie flapping, pedestrians staring. Bright cinematic light, shallow depth of field, vertical 9:16, sharp detail. No text."
       },
-      "sample": "(BOBBLEHEAD YOU, doing something wild: racing a shopping scooter down Main Street)\n\"Hey, [audience]! I'm [your name] from [business], and yes, my head really is this big.\"\n(BOBBLEHEAD CUSTOMER 1: a [customer type 1] in [their workplace])\n\"[Customer type 1]s use [business] to [benefit 1].\"\n(BOBBLEHEAD CUSTOMER 2: a [customer type 2] in [their workplace])\n\"[Customer type 2]s use it to [benefit 2], without [pain they hate].\"\n(BOBBLEHEAD CUSTOMER 3: a [customer type 3])\n\"And [customer type 3]s? They finally [result they want].\"\n(BOBBLEHEAD YOU, back on the scooter)\n\"[Offer in one line]. Click the link before my head gets any bigger.\""
+      "sample": "(BOBBLEHEAD YOU, head three times too big, drifting a [ride: shopping cart] through [place: a Costco parking lot])\n\"Hey, [audience: Tampa homeowners]. I'm [your name: Dave] from [business: Dave's Roofing]. Yes, the head is real. No, it does not fit in the truck.\"\n(BOBBLEHEAD CUSTOMER 1: a [customer type 1: retired guy] on [their spot: a sagging porch], head bouncing)\n\"I called [business] because [pain 1: it was raining in my living room]. Now the only thing leaking around here is my neighbor's jealousy.\"\n(BOBBLEHEAD CUSTOMER 2: a [customer type 2: landlord] in [their spot: a rental full of buckets])\n\"My tenants used to text me at 2 a.m. about [pain 2: water coming out of the light fixtures]. Now they text me nothing. It's eerie. I love it.\"\n(BOBBLEHEAD CUSTOMER 3: a [customer type 3: new mom], whisper-yelling)\n\"[Result 3: The baby sleeps. The roof doesn't drip.] I'd hug Dave, but I can't get my arms around that head.\"\n(BOBBLEHEAD YOU, cart smashing into a cone, head wobbling for way too long)\n\"[Offer: Free roof check this week]. Click the link before my neck gives out.\""
     },
     {
       "id": "things-that-talk",
       "name": "Things That Talk",
-      "tag": "Something in your business that never talks starts talking.",
-      "when": "Your product or service is ordinary, and you need a reason for people to watch.",
+      "tag": "The problem itself starts talking: ugly teeth, slow Wi-Fi, a nasty carpet.",
+      "when": "Your customer's problem is a thing they look at every day and pretend not to see.",
       "steps": [
-        "List the objects in your customer's world: the house, the shoebox of receipts, the leaky faucet, the unused gym bag.",
-        "Give each object a complaint that is really your customer's problem. The faucet: \"Drip. Drip. Eleven days, and nobody's called.\"",
-        "Let two or three objects grumble to each other. Your business shows up at the end as the fix.",
-        "Add a small sight gag and a sound: the cat batting the drip, a sigh, a squeak."
+        "Find the problem your customer can see: yellow teeth, a router that keeps blinking, a stained carpet, a dead lawn, a 2009 website.",
+        "Give it a face and let it talk about itself. It knows it's bad, and it's in denial about it. Yellow teeth: \"I'm not yellow. I'm vintage.\"",
+        "Let two or three parts of the problem roast each other. Then they panic when the customer reaches for the phone to call you.",
+        "Add a sight gag that shows the cost: the date who slides her chair back, the Zoom call that freezes on your worst face."
       ],
       "why": [
-        "Nobody expects a faucet to speak, so the thumb stops.",
-        "The complaint states the pain without a lecture.",
-        "A good talking object can come back in a whole series, like a mascot."
+        "Nobody expects their teeth to talk back, so the thumb stops.",
+        "The problem says the embarrassing part, so you never have to.",
+        "A problem that is scared of you is the funniest proof that you fix it."
       ],
       "beats": [
-        "Object 1 states the problem",
-        "Object 2 piles on",
-        "Object 3 adds the absurd detail",
-        "Sight gag",
-        "Your fix and call to action"
+        "The problem introduces itself",
+        "It brags or makes excuses",
+        "A second part piles on",
+        "Sight gag: what it costs the customer",
+        "Panic: \"Don't call them!\"",
+        "The after, your offer and call to action"
       ],
       "ideas": [
         {
-          "who": "Realtor",
-          "idea": "An unsold house, its mailbox and the lawn sign"
+          "who": "Dentist",
+          "idea": "Yellow, crooked teeth that call themselves vintage"
+        },
+        {
+          "who": "Internet provider",
+          "idea": "A blinking router that is proud of buffering"
+        },
+        {
+          "who": "Carpet cleaning",
+          "idea": "A carpet stain that thinks it is a family heirloom"
+        },
+        {
+          "who": "Lawn care",
+          "idea": "A brown lawn that calls itself rustic"
+        },
+        {
+          "who": "Web design",
+          "idea": "A 2009 website with a visitor counter, still bragging"
         },
         {
           "who": "Plumber",
-          "idea": "A dripping faucet and an exhausted bucket"
-        },
-        {
-          "who": "Accountant",
-          "idea": "A shoebox of receipts begging to be sorted"
+          "idea": "A dripping faucet counting the days nobody called"
         },
         {
           "who": "Personal trainer",
-          "idea": "A dusty gym bag that misses the gym"
+          "idea": "A dad bod that says it is just a bulk"
         },
         {
-          "who": "Author",
-          "idea": "A book on the shelf asking to be opened"
-        },
-        {
-          "who": "Podcast booking agency",
-          "idea": "Two lonely microphones waiting for a guest"
-        },
-        {
-          "who": "Bakery",
-          "idea": "A croissant bragging about its layers"
-        },
-        {
-          "who": "Dentist",
-          "idea": "A worn-out toothbrush asking for retirement"
+          "who": "Accountant",
+          "idea": "A shoebox of receipts that knows the audit is coming"
         }
       ],
       "prompts": [
         {
           "label": "Still image",
           "tool": "Nano Banana 2.1",
-          "text": "Pixar-style 3D render of a [object: chrome kitchen faucet] with a friendly cartoon face: big expressive eyes, bushy eyebrows, a mouth. It looks [tired and annoyed]. [Setting: a sunny kitchen sink with a bucket underneath catching drips]. Warm light, vertical 9:16, rich detail."
+          "text": "Pixar-style 3D render, extreme close-up of [the problem: a mouth of ugly, crooked, stained yellow teeth]. Each [tooth] has its own tiny cartoon face: big expressive eyes and a small mouth. [One looks embarrassed, one looks smug, one leans lazily on its neighbor.] [Gross detail: spinach stuck between two teeth]. Funny, gross but charming, bright warm light, vertical 9:16, rich detail."
         },
         {
           "label": "Motion (from the still)",
           "tool": "Veo 3.1 image-to-video",
-          "text": "Use this image as the first frame. The [object] talks to camera with clear mouth movement and says in a [weary, sarcastic] voice: \"[Drip. Drip. Eleven days, and nobody's called the plumber.]\" Small wiggles, slow push-in, [a single drip sound], 8 seconds, vertical."
+          "text": "Use this image as the first frame. The [smug yellow tooth] talks to camera with clear mouth movement and says in a [proud, sarcastic] voice: \"[I'm not yellow. I'm vintage.]\" The [crooked tooth] rolls its eyes. Small wiggles, slow push-in, 8 seconds, vertical."
         },
         {
           "label": "Motion (no image)",
           "tool": "Veo 3.1",
-          "text": "Vertical 9:16, 3D animated look. Three talking objects in [place]: a [object 1], a [object 2] and a [object 3], each with a cartoon face. Object 1 says: \"[line]\". Object 2 replies: \"[line]\". Comic pauses, light quirky music."
+          "text": "Vertical 9:16, 3D animated look. Close-up of [the problem: a blinking Wi-Fi router on a messy desk] with a cartoon face. It says, proud: \"[Buffering is a lifestyle.]\" Then a hand reaches for a phone, and the router panics: \"[Wait. Who are you calling?]\" Comic pauses, light quirky music."
         },
         {
           "label": "Script",
           "tool": "Agent",
-          "text": "My business is [business]. List 10 everyday objects my customers live with that could talk. For the best 3, write a 20-second scene where they grumble about [the customer's problem], land a joke, and close with a one-line call to action for [offer]. Lines under 12 words."
+          "text": "My business is [business]. My customer's problem is [problem]. Turn the problem itself into 2 or 3 talking characters that are in denial about how bad they are. Write a 20-second scene where they roast each other, a sight gag shows what the problem costs the customer, and they panic when the customer calls [business]. End with a one-line call to action for [offer]. Lines under 12 words. Make it cheeky, not polite."
         }
       ],
-      "brief": "Make a 20 to 30-second vertical Things That Talk video: everyday objects with cartoon faces complain about my customer's problem.\nBusiness: [your business]\nThe customer's problem: [problem]\nObjects to use: [objects, or you decide]\nOffer and call to action: [offer]\nLook: [Pixar-style 3D / realistic / you decide]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
+      "brief": "Make a 20 to 30-second vertical Things That Talk video: my customer's problem itself gets a face and talks, roasts itself, and panics when they call me.\nBusiness: [your business]\nThe problem that talks: [ugly teeth / slow Wi-Fi / stained carpet / you decide]\nOffer and call to action: [offer]\nLook: [Pixar-style 3D / realistic / you decide]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
       "example": {
         "aspect": "9:16",
-        "prompt": "Pixar-style 3D render of a chrome kitchen faucet with a friendly cartoon face: big expressive brown eyes, bushy eyebrows, a grumpy mouth, looking tired and annoyed. A single water drop falls into a tired-looking orange bucket under the sink, which also has a small cartoon face. Sunny kitchen, warm light, vertical 9:16, rich detail. No text."
+        "prompt": "Pixar-style 3D render, extreme close-up of a cartoon mouth with lips pulled back, showing a row of ugly, crooked, stained yellow teeth. Each tooth has its own tiny cartoon face: big expressive eyes and a small mouth. The front tooth looks embarrassed, a yellow tooth looks smug and proud, a crooked tooth leans lazily on its neighbor gossiping. A bit of spinach stuck between two teeth. Funny, gross but charming, bright warm light, vertical 9:16, rich detail. No text."
       },
-      "sample": "(OBJECT 1: the [object 1 from your customer's world], with a cartoon face, fed up)\n\"[Number] [days / weeks / months] of [the problem], and nobody has done a thing.\"\n(OBJECT 2: the [object 2], piling on)\n\"Tell me about it. I've been [absurd consequence of the problem] since [time].\"\n(OBJECT 3: the [object 3], the drama queen)\n\"I'm not saying it's bad, but [a small animal / a neighbor] just [ridiculous sight gag].\"\n(ALL THREE, staring at the camera)\n\"Somebody. Please. Call [business].\"\n(END CARD)\n\"[What you do, in five words]. [Offer]. [Call to action].\""
+      "sample": "(CLOSE-UP: [the problem itself: a mouth full of yellow, crooked teeth]. Every one of them has tiny eyes and a mouth.)\nFRONT TOOTH: \"Hi. We're [owner: Kevin]'s teeth. Kevin hasn't smiled in a photo since [year: 2014].\"\nYELLOW TOOTH: \"I'm not yellow. I'm vintage. I'm [ugly detail: the color of a 1970s bathroom].\"\nCROOKED TOOTH, leaning on its neighbor: \"I'm not crooked. I'm [excuse: just leaning in for the gossip].\"\n(SIGHT GAG: [gag: Kevin smiles at his date, and she slowly slides her chair back])\nALL THE TEETH, panicking: \"Kevin. Kevin, no. Put the phone down. Do NOT call [business: Bright Smile Dental]. We LIKE it here.\"\n(AFTER: [the fixed result: a bright, straight smile]. One tooth is now wearing sunglasses.)\nYELLOW TOOTH, defeated: \"Ugh. Fine. [Offer: Free whitening with your first cleaning]. [Call to action: Book at the link].\""
     },
     {
       "id": "problem-speaks",
@@ -303,7 +304,7 @@
         "aspect": "9:16",
         "prompt": "3D claymation-style villain character: a spiky bright yellow dandelion with a smug grin, tiny black sunglasses and crossed leaf arms, standing tall in a patchy suburban front lawn it has taken over, small dandelion minions behind it. Dramatic low angle, warm late-afternoon light, vertical 9:16. No text."
       },
-      "sample": "(THE PROBLEM as a smug character: [problem character name], the [problem])\n\"Hi. I'm [character name]. I'm [the problem]. I live at [customer's name]'s [house / mouth / laptop / yard].\"\n\"First, I [damage 1]. Then I [damage 2]. My best work? [damage 3, the funniest one].\"\n(THE CUSTOMER, out loud)\n\"But what if [the customer's main objection]?\"\n(THE PROBLEM, nervous now)\n\"Oh no. They booked [offer] with [business].\"\n(YOUR SERVICE throws the character out)\n\"[Short, funny exit line, e.g. 'I'll be back! Probably not.']\"\n(THE HAPPY AFTER)\n\"Now [the customer's happy result]. [Offer price or detail]. [Call to action].\""
+      "sample": "(THE PROBLEM as a smug villain: [name: Gary the Gingivitis], [look: tiny leather jacket, picking his teeth with a toothpick])\n\"Name's [name: Gary]. I'm [the problem: the gum disease] in [victim: Linda]'s mouth. Living here rent free since [time: Christmas].\"\n\"First, I [damage 1: made her breath smell like a gas station hot dog]. Then I [damage 2: made her gums bleed on a first date]. My masterpiece? [damage 3: she now laughs with her hand over her mouth. Like a spy.]\"\n(LINDA, to camera)\n\"[objection: Isn't the dentist expensive?]\"\n(THE PROBLEM, cackling)\n\"Ha! [the villain's lie: She thinks that costs more than a full set of dentures.]\"\n(LINDA picks up the phone. THE PROBLEM, suddenly sweating)\n\"Wait. Who are you calling? Not [business: Bright Smile Dental]. Linda. LINDA.\"\n(YOUR SERVICE flicks him out like a crumb)\n\"[exit line: I'll be back! ...Unless she flosses.]\"\n(THE HAPPY AFTER: [result: Linda laughing with her mouth wide open])\n\"[Offer: New patient exam, $49]. [Call to action: Book at the link]. Gary hates that.\""
     },
     {
       "id": "dont-buy-this",
@@ -377,7 +378,7 @@
         "aspect": "9:16",
         "prompt": "Photorealistic comedy photo of an exhausted but happy woman landscaper in a green polo shirt and work gloves standing in front of her truck, with a long line of eager neighbors holding coffee and waving behind her down the street. She holds up a hand-lettered cardboard sign that reads \"DON'T HIRE ME\". Documentary look, natural daylight, vertical 9:16."
       },
-      "sample": "(CUSTOMER 1: a [customer type 1], exhausted but happy)\n\"Don't buy [brand]. Seriously. Since I did, [complaint that is really result 1].\"\n(CUSTOMER 2: a [customer type 2])\n\"Do not sign up. Now [complaint that is really result 2], and I have to [funny consequence].\"\n(CUSTOMER 3: a [customer type 3])\n\"I used to [old pain]. Now the only thing that stresses me out is [result 3, said as a complaint].\"\n(CUSTOMER 4: a [customer type 4], to camera, close up)\n\"This is getting out of hand. [Result 4, as a complaint].\"\n(WARNING CARD)\n\"WARNING: [brand] may cause [result], [result] and [result]. Use at your own risk.\"\n(ALL OF THEM)\n\"Whatever you do... don't click that link.\""
+      "sample": "(CUSTOMER 1: a [customer type 1: busy mom], arms crossed, furious)\n\"Do NOT hire [brand: Shine Cleaning]. Since they came, [result 1 as a complaint: my mother-in-law can't find one thing to criticize]. What am I supposed to talk to her about now?\"\n(CUSTOMER 2: a [customer type 2: dad], staring into the distance)\n\"I used to [old pain: spend every Sunday scrubbing]. Now I have [result 2: free time], so I had to [funny consequence: actually talk to my family]. Turns out my son has a podcast. Nobody told me.\"\n(CUSTOMER 3: a [customer type 3: dog owner], whispering)\n\"[Result 3: The house is so clean the dog is nervous.] He thinks we're moving.\"\n(CUSTOMER 4: a [customer type 4: teenager], close up, deadpan)\n\"[Result 4 as a complaint: My friends think we're rich now.] We are not rich. Stop it, [brand].\"\n(WARNING CARD, read fast like a drug ad)\n\"WARNING: [brand] may cause [side effect 1: spotless counters], [side effect 2: smug Instagram posts] and [side effect 3: surprise guests who stay way too long].\"\n(ALL OF THEM, pointing at the camera)\n\"Whatever you do... do NOT click that link.\""
     },
     {
       "id": "mockumentary",
@@ -452,7 +453,7 @@
         "aspect": "16:9",
         "prompt": "Photorealistic mockumentary film still in a beige open-plan office with grey cubicles, a water cooler and fluorescent lights. A man in his thirties with a short-sleeve shirt and tie sits for an interview straight to camera with a stunned, wide-eyed expression, two coworkers blurred in the background peeking over a cubicle. Documentary framing, 16:9, slightly flat office color. No text."
       },
-      "sample": "(INTERVIEW 1: a coworker, stunned)\n\"So [name] just... [double-meaning line about the problem]. In the middle of the meeting.\"\n(INTERVIEW 2: another coworker, uncomfortable)\n\"Nobody wants to see that. Nobody. I saw [reaction from the room].\"\n(INTERVIEW 3: the boss, trying to be calm)\n\"We have a policy. You do not [double-meaning line] in front of [clients / the team].\"\n(THE CAMERA OPERATOR, off screen)\n\"What exactly are we talking about here?\"\n(COWORKER 1)\n\"His [the real thing: ads / pipes / buns / rack].\"\n(THE PRESENTER, at the whiteboard)\n\"If [the real problem], people [what they do: scroll past / leave / never call]. [Business] helps you [result].\"\n(SIGN GAG: a sign that reads [final pun])\n\"[Call to action].\""
+      "sample": "(INTERVIEW 1: a coworker, still in shock)\n\"So [name: Greg] just... whipped it out. In the middle of the [place: Monday meeting]. In front of everybody.\"\n(INTERVIEW 2: another coworker, can't look at the camera)\n\"It was small. Like, really small. And kind of... sad. Nobody knew where to look.\"\n(INTERVIEW 3: the boss, trying very hard to stay calm)\n\"We have a policy. You do not show [audience: clients] something that [double meaning: limp].\"\n(THE CAMERA OPERATOR, off screen)\n\"Sorry... what exactly are we talking about?\"\n(COWORKER 1, like it's obvious)\n\"His [the real thing: ad budget]. [the sad detail: Twelve dollars. On one Facebook post.]\"\n(THE PRESENTER, at the whiteboard)\n\"If [the real problem: your ads are that weak], people [what they do: scroll right past]. [Business: Scale Ads] helps you [result: get leads that actually show up].\"\n(SIGN GAG: a sign that reads [final pun: SIZE MATTERS. SO DOES TARGETING.])\n\"[Call to action: Free ad audit at the link].\""
     },
     {
       "id": "interpreter",
@@ -527,7 +528,7 @@
         "aspect": "9:16",
         "prompt": "Colorful comic-book illustration of a cozy living room. A man in a bathrobe glares at a small fluffy dog barking furiously at the front window, his face red and steam puffing from his ears. Next to him, a small calm blue cartoon sound-wave creature wearing round glasses, a white lab coat and a cap that reads \"DOG INTERPRETER\" takes notes on a clipboard. Bold outlines, bright flat colors, vertical 9:16."
       },
-      "sample": "(SCENE 1: [the customer] in an everyday moment, reacting way too much to [small thing])\n\"[Over-the-top line about the small thing]!\"\n(THE INTERPRETER, calm, clipboard in hand)\n\"Translation: [the real cause, said plainly]. They would simply like [the small, reasonable thing].\"\n(SCENE 2: worse)\n\"[Even bigger reaction to an even smaller thing]!\"\n(THE INTERPRETER)\n\"Translation: [the real cause again, a little funnier].\"\n(SCENE 3: total chaos)\n(THE INTERPRETER, holding up [product])\n\"[Product] [what it does in plain words].\"\n(REFRAME)\n\"It's not you. It's your [cause]. [Business] can help. [Call to action].\""
+      "sample": "(SCENE 1: [the customer: a grown man] screaming at [small thing: one sock on the floor])\n\"WHY DOES NOBODY IN THIS HOUSE RESPECT ME?!\"\n(THE INTERPRETER steps in, calm, clipboard in hand)\n\"Translation: [the real cause: he slept four hours]. He would simply like [the small, reasonable thing: one quiet night].\"\n(SCENE 2: worse. [bigger reaction: he is sobbing at a dog food commercial])\n\"THE DOG JUST WANTED TO COME HOME!\"\n(THE INTERPRETER)\n\"Translation: [the real cause, funnier: his mattress is older than his kids. It has a dent shaped like regret.]\"\n(SCENE 3: total chaos. [chaos: he fights a fitted sheet, and the sheet wins])\n(THE INTERPRETER, holding up [product: the CloudRest mattress])\n\"[Product: CloudRest] [what it does: fixes your sleep in one night, or you send it back].\"\n(REFRAME)\n\"It's not you. It's your [cause: mattress]. [Business: CloudRest] can help. [Call to action: 100 nights free at the link].\""
     },
     {
       "id": "obvious-actor",
@@ -593,7 +594,7 @@
         "aspect": "9:16",
         "prompt": "Photo of a friendly middle-aged man dressed as an obviously fake comic character: an enormous fake bushy beard, a bright bucket hat, aviator sunglasses and a Hawaiian shirt, wearing a name tag that reads \"HELLO MY NAME IS GUSTAVO\". He stands proudly in front of a small shop, thumbs up, vertical 9:16, natural daylight, playful."
       },
-      "sample": "(THE CHARACTER, in a ridiculous costume, name tag: [CHARACTER NAME])\n\"Hello. My name is [character name]. I am a completely real customer.\"\n(CARD: \"[Character name], BEFORE [brand]\")\n\"I had [the before: zero leads / no energy / no dates]. I was [funny sad detail].\"\n(CARD: \"[Character name], AFTER [brand]\")\n\"Now I have [the after]. I had to [funny consequence of success].\"\n(THE CHARACTER, leaning in)\n\"Do I look like I'm lying? [Beat.] Don't answer that.\"\n(END CARD)\n\"[Offer]. [Call to action].\""
+      "sample": "(THE CHARACTER: [obvious fake: a golden retriever in a suit and tie], name tag: [CHARACTER NAME: TOTALLY A HUMAN NAMED BRAD])\n\"Hello. I am [character name: Brad]. A completely normal human customer. I have hands.\"\n(He does not have hands.)\n(CARD: \"[Character name: Brad], BEFORE [brand: Scale Ads]\")\n\"I had [the before: zero leads]. I was so broke I [funny sad detail: ate my own homework]. I mean my lunch. I ate my lunch.\"\n(CARD: \"[Character name: Brad], AFTER [brand: Scale Ads]\")\n\"Now I have [the after: 312 new customers a month]. I had to [funny consequence of success: hire three cats to answer the phones]. They are terrible at it.\"\n(THE CHARACTER, leaning in, tail wagging hard)\n\"Do I look like I'm lying? [beat] Don't answer that. Also... is that a ball?\"\n(END CARD)\n\"[Offer: Your first campaign, free]. [Call to action: Click the link]. Brad would want you to.\""
     },
     {
       "id": "jingle",
@@ -662,7 +663,7 @@
         "aspect": "9:16",
         "prompt": "Pixar-style 3D cartoon of a cheerful woman with curly red hair in a yellow jacket singing into a vintage microphone on a rooftop stage at sunset, holding up a sign that reads \"CALLING ALL BUSINESS OWNERS\", a crowd of cartoon people dancing below, confetti in the air, bright saturated colors, vertical 9:16."
       },
-      "sample": "(INTRO, cartoon you at the mic)\n\"Calling all [audience]! Yeah, you!\"\n(VERSE: the pain)\n\"Tired of [pain 1], [pain 2] every day,\n(pain 3) getting in your way.\"\n(PRE-CHORUS: what they want)\n\"You just want [desire], you want it fast,\nyou want [desire 2] that's built to last.\"\n(CHORUS: the result)\n\"[Business]! [Result in four words]!\n(Business)! [Result, said another way]!\nLink below, don't wait, don't stall,\n(short rhyme with the call to action)!\"\n(OUTRO)\n\"[Offer]. Link below.\""
+      "sample": "(INTRO: cartoon you at the mic, way too much confidence)\n\"Hey, [audience: you with the nasty carpet]! Yeah, YOU! We can smell it from here!\"\n(VERSE: the pain, roasted)\n\"Your [problem thing: carpet] looks like a [insult: crime scene],\nthe [culprit: dog] did something we've never seen,\nyour [judge: mother-in-law] walked in and froze,\nand now [consequence: the whole family knows]!\"\n(PRE-CHORUS: what they want)\n\"You want it [desire 1: fresh], you want it [desire 2: fast],\nyou want a [thing: rug] that's built to last!\"\n(CHORUS: the result)\n\"[Business: Fresh Step]! [Result in four words: We make it clean]!\n[Business: Fresh Step]! [Result, said another way: The cleanest it's ever been]!\n[Offer: First room free], so don't you stall,\n[rhyme with the call to action: the link is right there, go click it, y'all]!\"\n(OUTRO, spoken)\n\"[Offer: First room free]. Link below. [closing gag: The dog says sorry.]\""
     },
     {
       "id": "clone-anywhere",
@@ -732,7 +733,7 @@
         "aspect": "9:16",
         "prompt": "Photorealistic photo of a confident woman in her thirties with a dark bob haircut and a mustard blazer, talking to camera in a retro bowling alley with neon lights. In the background, a man in a full hot dog costume stands perfectly still beside a ball return and stares at the camera. Natural light, shallow depth of field, vertical 9:16. No text."
       },
-      "sample": "(YOUR CLONE in [surprising place], talking straight to camera. In the background: [odd detail], never mentioned)\n\"[Hook in under 3 seconds: a question or a bold claim about the problem].\"\n\"Here's the thing most [audience] get wrong: [the mistake].\"\n\"[Your main point, in one or two lines].\"\n\"[One proof: a number, a result, a short story].\"\n(THE ODD DETAIL does one small thing: waves, sips coffee, bowls a strike)\n\"[Call to action]. And no, I don't know who that is either.\""
+      "sample": "(YOUR CLONE in [surprising place: the middle of a bowling lane, pins behind you]. In the background: [odd detail: a man in a full chicken suit, bowling], never mentioned)\n\"[Hook in under 3 seconds: Your website is losing you money right now. While you watch this.]\"\n\"Here's what most [audience: small business owners] get wrong: [the mistake: they think pretty sells. Pretty doesn't sell. Clear sells.]\"\n\"[Your main point: If a stranger can't tell what you do in five seconds, they leave. Gone. Forever.]\"\n\"[One proof: We changed one headline for a plumber. Calls went up 41 percent in a week.]\"\n(THE ODD DETAIL bowls a strike and celebrates like he won the Super Bowl. You do not react.)\n\"[Call to action: Free website roast at the link]. And no, I don't know who that is either.\""
     },
     {
       "id": "spokes-character",
@@ -802,7 +803,7 @@
         "aspect": "16:9",
         "prompt": "Character sheet of a brand mascot for a home insurance company: a friendly round orange owl wearing a tiny blue hard hat and a reflective safety vest, Pixar-style 3D. Full body front view, three-quarter view, side view, and four facial expressions (happy, surprised, serious, laughing) in a row. Plain light-grey background, clean studio light, 16:9. No text."
       },
-      "sample": "(SPOKES-CHARACTER: [name], the face of [business], in [setting])\n\"Hi, I'm [name] from [business].\"\n(HOOK, pick one: a question / a bold claim / a short story / a common mistake / the offer)\n\"[Hook line].\"\n\"[One sentence about the problem your customer has].\"\n\"[One sentence about how the business fixes it].\"\n\"[One proof: a number, a neighbor, a result].\"\n\"[Offer]. [Call to action]. See you next time.\""
+      "sample": "(SPOKES-CHARACTER: [name: Tony the Tooth], [look: a giant molar with a gold chain and a Brooklyn accent], in [setting: the dentist's waiting room, feet up on the table])\n\"Ay. [name: Tony]. I'm with [business: Bright Smile Dental]. Don't get up.\"\n(HOOK, pick one: a question / a bold claim / a short story / a common mistake / the offer)\n\"[Hook line: Quick question. When's the last time you smiled with your mouth open? ...Yeah. That's what I thought.]\"\n\"[The problem: You hide your teeth in every photo like they owe somebody money.]\"\n\"[How the business fixes it: The guys here fix that in one visit. Numbing that actually numbs. No drill sounds in your nightmares.]\"\n\"[One proof: Four thousand smiles in this town. Even Sal's. And Sal's teeth were a crime scene.]\"\n\"[Offer: New patient exam, $49]. [Call to action: Book at the link]. Tell 'em Tony sent ya.\""
     },
     {
       "id": "sky-tour",
@@ -877,7 +878,7 @@
         "aspect": "16:9",
         "prompt": "Cinematic aerial drone photo at golden hour of a modern single-story desert home with a turquoise pool, white stucco walls, large glass windows and palm trees, saguaro cacti and rocky hills in the background, warm sunset light, wide shot from above and behind, photorealistic real estate photography, 16:9. No text, no people."
       },
-      "sample": "(SHOT 1, aerial pull-back from [hero photo])  TEXT: [size] · [city]\n(SHOT 2, push-in through [living space photo])  TEXT: [headline feature]\n(SHOT 3, slow pan across [kitchen or dining photo])  TEXT: [second feature]\n(SHOT 4, glide into [main bedroom or bath photo])  TEXT: [beds] bed · [baths] bath\n(SHOT 5, rise over [view or neighborhood photo])  TEXT: [lifestyle line: 5 minutes to the beach]\n(SHOT 6, end card)  TEXT: [agent name] · [brokerage] · [call to action]\nMUSIC: [mood: warm acoustic / cinematic / upbeat], no voiceover."
+      "sample": "(SHOT 1, aerial pull-back from [hero photo: the front of the house at sunset])  TEXT: [hook: POV: you finally stopped renting]\n(SHOT 2, push-in through [living space photo: the living room])  TEXT: [headline feature: a living room your landlord could never]\n(SHOT 3, slow pan across [kitchen or dining photo: the kitchen island])  TEXT: [second feature: yes, that's a wine fridge]\n(SHOT 4, glide into [main bedroom or bath photo: the main suite])  TEXT: [beds and baths: 4 bed · 3 bath · 0 roommates]\n(SHOT 5, rise over [view or neighborhood photo: the beach at golden hour])  TEXT: [lifestyle line: 5 minutes to the beach. Your boss can't find you here.]\n(SHOT 6, end card)  TEXT: [agent name: Maria Lopez] · [brokerage: Coastline Realty] · [call to action: DM \"SUNSET\" before Saturday]\nMUSIC: [mood: warm acoustic / cinematic / upbeat], no voiceover."
     }
   ]
 }
