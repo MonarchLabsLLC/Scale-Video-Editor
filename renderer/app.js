@@ -168,8 +168,12 @@ async function refreshFc() {
 
 /* ---------- navigation ---------- */
 function go(route) {
+  const prev = state.route || {};
   state.route = route;
   render();
+  // A new page starts at the top. #main keeps its scroll position when its content is replaced,
+  // so without this a page opened from far down a list would open scrolled down too.
+  if (prev.view !== route.view || prev.id !== route.id) $('#main').scrollTop = 0;
 }
 document.addEventListener('click', e => {
   const n = e.target.closest('[data-nav]');
