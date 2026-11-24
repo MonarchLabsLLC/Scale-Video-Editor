@@ -187,6 +187,7 @@ function render() {
   const v = state.route.view;
   if (v === 'project') main.append(viewProject(state.route.id));
   else if (v === 'formats') main.append(viewFormats());
+  else if (v === 'viral') main.append(state.route.id ? viewViralFormat(state.route.id) : viewViral());
   else if (v === 'settings') main.append(viewSettings());
   else if (v === 'filmcraft') main.append(viewFilmcraft());
   else if (v === 'tools') main.append(viewTools());
@@ -577,6 +578,85 @@ function viewFormats() {
       h('div', { class: 'formats' }, list.map(formatCard))));
 }
 
+/* ---------- viral videos ---------- */
+const VIRAL = window.SVE_VIRAL || { formats: [] };
+const viralImg = id => `assets/viral/${id}.jpg`;
+// Text that goes into a brief must not contain [brackets]: those become interview questions.
+const unbracket = t => String(t).replace(/\[([^\]]+)\]/g, '<$1>');
+
+function viralBrief(f) {
+  return [
+    f.brief,
+    '',
+    `How the ${f.name} format works: ${unbracket(f.tag)}`,
+    ...f.steps.map(x => '- ' + unbracket(x)),
+    'Beats: ' + f.beats.map(unbracket).join(' -> '),
+    'Prompts to start from (fill the <placeholders> from my answers):',
+    ...f.prompts.map(p => `- ${p.label} (${p.tool}): ${unbracket(p.text)}`),
+    '',
+    'Tools: make stills with GenMedia google/nano-banana-2.1 and reuse each character image so the look stays the same. Animate with fal-ai/veo3.1/image-to-video (talking, lip sync) or kling/v4/image-to-video. Songs with elevenlabs/music/v2.5. Voiceover with my-voice. Cut, caption and export in FilmCraft. Burn in captions and end on the call to action.',
+    'Before generating video clips, show me the script and the stills, say roughly what the video clips will cost, and wait for my go-ahead.'
+  ].join('\n');
+}
+
+function makeViral(f) {
+  openInterview({ id: 'viral-' + f.id, name: f.name, shape: 'Viral video', blurb: f.tag, brief: viralBrief(f), img: viralImg(f.id) });
+}
+
+function viewViral() {
+  const card = f => h('article', { class: 'vcard', role: 'button', tabindex: '0', onclick: () => go({ view: 'viral', id: f.id }), onkeydown: e => { if (e.key === 'Enter') go({ view: 'viral', id: f.id }); } },
+    h('div', { class: 'vthumb' }, h('img', { src: viralImg(f.id), alt: '', loading: 'lazy' })),
+    h('div', { class: 'vbody' }, h('h3', null, f.name), h('p', null, f.tag)));
+  return h('div', { class: 'page' }, h('div', { class: 'topdrag' }),
+    h('div', { class: 'opener', style: toneStyle('lilac') },
+      h('p', { class: 'label' }, 'Viral Videos'),
+      h('h1', null, 'Viral Videos for Social Media.'),
+      h('p', { class: 'opener-sub' }, VIRAL.lede)),
+    h('section', null,
+      sectionHead(`${VIRAL.formats.length} formats`, 'Pick a format.', 'Each one has the idea, the beats, ideas for your niche, and the prompts. Click Make this video and the agent does the rest.'),
+      h('div', { class: 'vgrid-cards' }, VIRAL.formats.map(card))),
+    h('section', { class: 'vsplit' },
+      h('div', { class: 'vbox' }, h('h3', null, 'The rules behind every one'), h('ul', null, VIRAL.rules.map(r => h('li', null, r)))),
+      h('div', { class: 'vbox' }, h('h3', null, 'How the editor makes it'), h('ol', { class: 'vsteps' }, VIRAL.pipeline.map(p => h('li', null, h('b', null, p.step), h('span', null, p.detail)))))),
+    h('section', { class: 'vbox' }, h('h3', null, 'What does each job'),
+      h('div', { class: 'vtools' }, VIRAL.tools.map(t => h('div', null, h('b', null, t.name), h('span', null, t.detail))))));
+}
+
+function viewViralFormat(id) {
+  const f = VIRAL.formats.find(x => x.id === id);
+  if (!f) return viewViral();
+  const i = VIRAL.formats.indexOf(f);
+  const next = VIRAL.formats[(i + 1) % VIRAL.formats.length];
+  const prompt = p => {
+    const btn = h('button', { class: 'btn small', onclick: () => copyText(p.text) }, 'Copy');
+    return h('div', { class: 'vprompt' },
+      h('header', null, h('b', null, p.label), h('span', { class: 'vtool' }, p.tool), h('span', { class: 'grow' }), btn),
+      h('pre', null, p.text));
+  };
+  return h('div', { class: 'page' }, h('div', { class: 'topdrag' }),
+    h('button', { class: 'btn small ghost', onclick: () => go({ view: 'viral' }) }, '← All viral formats'),
+    h('div', { class: 'vhero' },
+      h('div', { class: 'vhero-img' }, h('img', { src: viralImg(f.id), alt: `Example still for ${f.name}` })),
+      h('div', { class: 'vhero-text' },
+        h('p', { class: 'eyebrow' }, `Viral format ${i + 1} of ${VIRAL.formats.length}`),
+        h('h1', { class: 'hero', style: { fontSize: '48px' } }, f.name),
+        h('p', { class: 'lede' }, f.tag),
+        h('div', { class: 'vbox soft' }, h('h3', null, 'Use it when'), h('p', null, f.when)),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn coral', onclick: () => makeViral(f) }, 'Make this video'),
+          h('button', { class: 'btn', onclick: () => go({ view: 'viral', id: next.id }) }, `Next: ${next.name} →`)),
+        h('p', { class: 'fh' }, 'This example still was made with Nano Banana 2.1. Yours will star your business.'))),
+    h('div', { class: 'vsplit' },
+      h('div', { class: 'vbox' }, h('h3', null, 'How to run it'), h('ul', null, f.steps.map(x => h('li', null, x)))),
+      h('div', { class: 'vbox' }, h('h3', null, 'Why it works'), h('ul', null, f.why.map(x => h('li', null, x))))),
+    h('div', { class: 'vbox' }, h('h3', null, 'The beats'), h('ol', { class: 'vflow' }, f.beats.map(b => h('li', null, b)))),
+    h('div', { class: 'vbox' }, h('h3', null, 'Ideas for your niche'),
+      h('table', { class: 'vniche' }, h('tbody', null, f.ideas.map(n => h('tr', null, h('td', null, n.who), h('td', null, n.idea)))))),
+    h('section', null,
+      sectionHead('Prompts', 'Image first, then motion.', 'Text in [brackets] is yours to fill in. Make this video fills them from your answers, or copy one and use it anywhere.'),
+      h('div', { class: 'vprompts' }, f.prompts.map(prompt))));
+}
+
 /* ---------- interview ---------- */
 function openInterview(f) {
   const qs = window.SVEBrief.parse(f.brief);
@@ -642,7 +722,7 @@ function openInterview(f) {
   bpick = brandPicker({ value: brand, onChange: onBrand });
   const sheet = h('div', { class: 'sheet', role: 'dialog' },
     h('div', { class: 'sheet-top' },
-      h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
+      f.img ? h('div', { class: 'frame' }, h('img', { src: f.img, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } })) : h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
       h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,

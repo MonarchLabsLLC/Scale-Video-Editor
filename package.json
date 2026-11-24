@@ -1,7 +1,7 @@
 {
   "name": "scale-video-editor",
   "productName": "Scale Video Editor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Chat with Claude Code or Codex and watch your video get made. A desktop editor built on FilmCraft and the Scale Video Toolkit.",
   "main": "main/main.js",
   "license": "MIT",
