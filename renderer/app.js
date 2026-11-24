@@ -622,7 +622,7 @@ function madlib(text) {
 }
 
 function makeViral(f) {
-  openInterview({ id: 'viral-' + f.id, name: f.name, shape: 'Viral video', blurb: f.tag, brief: viralBrief(f), img: viralImg(f.id) });
+  openInterview({ id: 'viral-' + f.id, name: f.name, shape: 'Viral video', blurb: f.tag, brief: viralBrief(f), img: viralImg(f.id), sample: f.sample });
 }
 
 function viewViral() {
@@ -735,6 +735,14 @@ function openInterview(f) {
   let brand = homeBrand();
   let kn = homeKnowledge();
   let vm = homeVideoModel();
+  // Script: "Write it for me" (the agent fills the format's sample script as a Mad Lib from the
+  // brand knowledge and the answers) or "Paste your script". A viral format always gets this choice.
+  const scriptQ = qs.find(q => q.type === 'long' && /script/i.test(q.hint));
+  const hasScript = !!scriptQ || !!f.sample;
+  let scriptMode = 'write', pasted = '';
+  const WRITE = f.sample
+    ? 'write it for me: fill this format\'s sample script as a Mad Lib with my business, customer, problem and offer (from my brand knowledge and my answers), and show it to me before you make anything'
+    : 'write it for me from my business (my brand knowledge and my answers), and show it to me before you make anything';
   const assets = []; // [{ path, note }] reference photos and files, each with what it is for
   let steer = '';
   const overlay = $('#overlay');
@@ -744,11 +752,13 @@ function openInterview(f) {
   // and the script can be left for the agent to write.
   const filled = () => {
     const a = { ...answers };
+    if (scriptQ) a[scriptQ.id] = scriptMode === 'paste' ? pasted : WRITE;
     if (kn.length) for (const q of qs) if ((q.type === 'short' || q.type === 'long') && !String(a[q.id] || '').trim()) a[q.id] = q.type === 'long' ? 'write it for me from my brand knowledge' : 'take it from my brand knowledge, or you choose';
     return a;
   };
   const buildPrompt = () => {
     const out = [window.SVEBrief.fill(f.brief, qs, filled())];
+    if (hasScript && !scriptQ) out.push('', scriptMode === 'paste' && pasted.trim() ? `My script (use it as it is; keep the format's beats around it):\n${pasted.trim()}` : `Script: ${WRITE}.`);
     const named = assets.filter(x => x.path);
     if (named.length) out.push('', 'Reference photos and files I added. Use each one as its note says. For a person, an outfit, a product or a place, give the image to the image model as a reference (an edit or reference-image model) so it looks the same in every still. Do not move or delete them:',
       ...named.map(x => `- ${x.path}${x.note.trim() ? ` (${x.note.trim()})` : ' (no note: ask me what it is for if it is not clear)'}`));
@@ -756,7 +766,7 @@ function openInterview(f) {
     return out.join('\n');
   };
   const update = () => { preview.textContent = buildPrompt(); };
-  const needed = q => (q.type === 'long' && !kn.length) || q.type === 'file';
+  const needed = q => (q === scriptQ ? scriptMode === 'paste' : q.type === 'long' && !kn.length) || q.type === 'file';
 
   // Pickers. Brand and knowledge sit at the top of the form; the footer keeps agent, model and video model.
   let picker, mpick, bpick, kpick, vpick;
@@ -791,7 +801,32 @@ function openInterview(f) {
     h('div', { class: 'row-gap' }, kpick, bpick),
     brandNote));
 
+  const scriptBox = () => {
+    const ta = h('textarea', { placeholder: 'Paste your script here.', oninput: e => { pasted = e.target.value; update(); } });
+    const writePane = h('div', { class: 'script-write' },
+      h('p', null, f.sample
+        ? 'The agent writes your script from this format\'s proven sample script, as a Mad Lib: it keeps the beats, rhythm and jokes, and swaps in your business, your customer, your problem and your offer from your brand knowledge and your answers. You see the script before anything is made.'
+        : 'The agent writes your script from your brand knowledge and your answers. You see it before anything is made.'),
+      f.sample ? h('details', null, h('summary', null, 'See the sample script it starts from'), h('pre', { class: 'vsample' }, madlib(f.sample))) : null);
+    const pane = h('div');
+    const tabs = h('div', { class: 'seg script-tabs' });
+    const draw = () => {
+      tabs.innerHTML = '';
+      for (const [m, l] of [['write', 'Write it for me'], ['paste', 'Paste your script']]) tabs.append(h('button', { type: 'button', class: scriptMode === m ? 'on' : '', onclick: () => { scriptMode = m; draw(); update(); } }, l));
+      pane.innerHTML = ''; pane.append(scriptMode === 'write' ? writePane : ta);
+      for (const t of reqTags) if (t.q === scriptQ) t.el.style.display = needed(t.q) ? '' : 'none';
+    };
+    draw();
+    return h('div', { class: 'script-box' }, tabs, pane);
+  };
+
   for (const q of qs) {
+    if (q === scriptQ) {
+      const req = h('span', { class: 'req' }, 'needed');
+      reqTags.push({ q, el: req });
+      body.append(h('div', { class: 'q' }, h('label', { class: 'ql' }, 'Script', req), scriptBox()));
+      continue;
+    }
     const req = h('span', { class: 'req' }, 'needed');
     reqTags.push({ q, el: req });
     const label = h('label', { class: 'ql' }, q.label, req);
@@ -825,6 +860,8 @@ function openInterview(f) {
     body.append(h('div', { class: 'q' }, label, input));
   }
 
+  if (hasScript && !scriptQ) body.append(h('div', { class: 'q' }, h('label', { class: 'ql' }, 'Script'), scriptBox()));
+
   // Reference photos and files, each with a note on what it is for.
   const assetList = h('div', { class: 'asset-list' });
   const drawAssets = () => {
@@ -852,7 +889,8 @@ function openInterview(f) {
 
   const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; };
   const launch = fast => {
-    const miss = qs.filter(q => needed(q) && !String(answers[q.id] || '').trim());
+    const miss = qs.filter(q => needed(q) && !String(q === scriptQ ? pasted : answers[q.id] || '').trim());
+    if (hasScript && !scriptQ && scriptMode === 'paste' && !pasted.trim()) miss.push({ label: 'Script' });
     if (miss.length) { toast(`Please fill in: ${miss.map(m => m.label).join(', ')}`); return; }
     const prompt = buildPrompt();
     close();

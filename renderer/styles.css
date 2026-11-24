@@ -695,3 +695,10 @@ input.krename { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; widt
 .asset-row .fname { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .asset-x { width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--hair); background: var(--panel); }
 .sheet-foot .foot-go { margin-left: auto; display: flex; gap: 10px; }
+.script-box { display: flex; flex-direction: column; gap: 10px; }
+.script-tabs { align-self: flex-start; }
+.script-write { border: 1px solid var(--hair); border-radius: 12px; background: var(--panel); padding: 12px 14px; font-size: 13px; color: var(--muted); }
+.script-write p { margin: 0; line-height: 1.5; }
+.script-write details { margin-top: 8px; }
+.script-write summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+.script-write .vsample { max-height: 260px; overflow: auto; font-size: 12px; margin-top: 8px; }
