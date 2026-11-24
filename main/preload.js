@@ -24,6 +24,15 @@ contextBridge.exposeInMainWorld('sve', {
     openFile: p => invoke('toolkit:openFile', p),
     onLog: fn => { const h = (_e, d) => fn(d); ipcRenderer.on('toolkit:log', h); return () => ipcRenderer.removeListener('toolkit:log', h); }
   },
+  knowledge: {
+    list: () => invoke('knowledge:list'),
+    get: id => invoke('knowledge:get', id),
+    pickFiles: () => invoke('knowledge:pickFiles'),
+    importFile: file => invoke('knowledge:importFile', file),
+    saveText: opts => invoke('knowledge:saveText', opts),
+    update: (id, patch) => invoke('knowledge:update', id, patch),
+    trash: id => invoke('knowledge:trash', id)
+  },
   brands: {
     list: () => invoke('brands:list'),
     get: id => invoke('brands:get', id),

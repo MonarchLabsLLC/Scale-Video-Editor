@@ -75,6 +75,7 @@ function brandMoreButton(b) {
 
 /* ---------- the Brand Guides page ---------- */
 function viewBrands() {
+  if (state.brandTab === 'knowledge') return viewKnowledge();
   if (!state.brands) refreshBrands().then(() => { if (state.route.view === 'brands') render(); });
   const list = state.brands || [];
   const busy = !!state.brandBusy;
@@ -98,6 +99,7 @@ function viewBrands() {
   if (!busy) setTimeout(() => { if (!state.brandUrl && state.route.view === 'brands') input.focus(); }, 0);
 
   return h('div', { class: 'page brands-page' }, h('div', { class: 'topdrag' }),
+    brandTabs('style'),
     h('div', { class: 'bhero' },
       h('p', { class: 'eyebrow' }, 'Brand Guides'),
       h('h1', { class: 'hero', html: 'Every video, in <em>your brand.</em>' }),
@@ -112,9 +114,10 @@ function viewBrands() {
         h('p', null, 'The agent uses the guide for everything it designs. It works best for motion graphics: title cards, lower thirds, captions, charts, animated text, explainers and end cards.'),
         h('div', { class: 'buse-chips' }, BRAND_USES.map(t => h('span', { class: 'pill' }, t)))),
       h('div', { class: 'binfo-card note' },
-        h('p', { class: 'label-sm' }, 'Only the design guide'),
-        h('h3', null, 'We don’t need your brand knowledge document.'),
-        h('p', null, 'A design guide, often a file named DESIGN.md, holds your colors, fonts, logo and layout rules. That is all we need. Your brand knowledge document, with your story, offers and audience, does not go here.'))),
+        h('p', { class: 'label-sm' }, 'Only the design guide here'),
+        h('h3', null, 'Your brand knowledge has its own tab.'),
+        h('p', null, 'A design guide, often a file named DESIGN.md, holds your colors, fonts, logo and layout rules. Your brand knowledge documents, with your story, offers and audience, go in the Brand knowledge tab.'),
+        h('button', { class: 'btn small', style: { marginTop: '10px' }, onclick: () => { state.brandTab = 'knowledge'; go({ view: 'brands' }); } }, 'Open Brand knowledge'))),
     h('section', null,
       sectionHead('Your brand guides', list.length ? `${list.length} saved on this computer.` : 'None yet.', list.length ? 'Kept on this computer, in the Brand Guides folder next to your projects.' : null),
       list.length

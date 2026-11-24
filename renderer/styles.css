@@ -636,3 +636,27 @@ button.tool-pill:hover { border-color: var(--label); }
 .vtool { font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .vprompt pre { margin: 0; padding: 12px 14px; white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; flex: 1; }
 @media (max-width: 900px) { .vsplit, .vhero { grid-template-columns: minmax(0, 1fr); } .vhero-img { max-width: 320px; } }
+.vsample { margin: 0; padding: 20px 22px; border: 1px solid var(--hair); border-radius: 18px; background: var(--soft); white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 13.5px; line-height: 1.75; }
+.vsample mark.blank { background: #f6d77a; color: #2a2200; border-radius: 5px; padding: 1px 5px; }
+
+/* ---------- brand knowledge ---------- */
+.kadd { gap: 12px; }
+.kadd-text { flex: 1; color: var(--muted); font-size: 15px; }
+.kgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.kcard { border: 1px solid var(--hair); border-radius: 20px; padding: 18px 20px; background: var(--soft); cursor: pointer; display: grid; gap: 8px; align-content: start; min-width: 0; transition: border-color .15s ease, transform .15s ease; }
+.kcard:hover, .kcard:focus-visible { border-color: var(--ink); transform: translateY(-2px); }
+.kcard-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); }
+.kicon svg { width: 22px; height: 22px; display: block; }
+.kcard h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.kcard p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ksrc { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.ktext { white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 13px; line-height: 1.7; border: 1px solid var(--hair); border-radius: 18px; padding: 20px 22px; background: var(--soft); max-height: 70vh; overflow: auto; margin: 0; }
+textarea.kpaste { width: 100%; min-height: 260px; font-family: var(--mono); font-size: 13px; line-height: 1.6; }
+textarea.kpaste.tall { min-height: 60vh; }
+input.krename { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; width: 100%; margin: 8px 0 12px; }
+.kdot { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; opacity: .6; }
+.kdot.on { background: #3f9b5a; color: #fff; opacity: 1; }
+.kpick-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kbox { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--hair); font-size: 12px; flex: none; }
+.kbox.on { background: #3f9b5a; border-color: #3f9b5a; color: #fff; }
+.knowledge-pick > .mini-select { border: 1px solid var(--hair); }

@@ -130,7 +130,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Photorealistic comedy photo of a cheerful man in his forties with short dark hair and a navy blazer, with a hugely oversized caricature head about three times normal size on a normal body, wide delighted grin, racing down a sunny city sidewalk on an electric scooter, tie flapping, pedestrians staring. Bright cinematic light, shallow depth of field, vertical 9:16, sharp detail. No text."
-      }
+      },
+      "sample": "(BOBBLEHEAD YOU, doing something wild: racing a shopping scooter down Main Street)\n\"Hey, [audience]! I'm [your name] from [business], and yes, my head really is this big.\"\n(BOBBLEHEAD CUSTOMER 1: a [customer type 1] in [their workplace])\n\"[Customer type 1]s use [business] to [benefit 1].\"\n(BOBBLEHEAD CUSTOMER 2: a [customer type 2] in [their workplace])\n\"[Customer type 2]s use it to [benefit 2], without [pain they hate].\"\n(BOBBLEHEAD CUSTOMER 3: a [customer type 3])\n\"And [customer type 3]s? They finally [result they want].\"\n(BOBBLEHEAD YOU, back on the scooter)\n\"[Offer in one line]. Click the link before my head gets any bigger.\""
     },
     {
       "id": "things-that-talk",
@@ -215,7 +216,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Pixar-style 3D render of a chrome kitchen faucet with a friendly cartoon face: big expressive brown eyes, bushy eyebrows, a grumpy mouth, looking tired and annoyed. A single water drop falls into a tired-looking orange bucket under the sink, which also has a small cartoon face. Sunny kitchen, warm light, vertical 9:16, rich detail. No text."
-      }
+      },
+      "sample": "(OBJECT 1: the [object 1 from your customer's world], with a cartoon face, fed up)\n\"[Number] [days / weeks / months] of [the problem], and nobody has done a thing.\"\n(OBJECT 2: the [object 2], piling on)\n\"Tell me about it. I've been [absurd consequence of the problem] since [time].\"\n(OBJECT 3: the [object 3], the drama queen)\n\"I'm not saying it's bad, but [a small animal / a neighbor] just [ridiculous sight gag].\"\n(ALL THREE, staring at the camera)\n\"Somebody. Please. Call [business].\"\n(END CARD)\n\"[What you do, in five words]. [Offer]. [Call to action].\""
     },
     {
       "id": "problem-speaks",
@@ -301,7 +303,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "3D claymation-style villain character: a spiky bright yellow dandelion with a smug grin, tiny black sunglasses and crossed leaf arms, standing tall in a patchy suburban front lawn it has taken over, small dandelion minions behind it. Dramatic low angle, warm late-afternoon light, vertical 9:16. No text."
-      }
+      },
+      "sample": "(THE PROBLEM as a smug character: [problem character name], the [problem])\n\"Hi. I'm [character name]. I'm [the problem]. I live at [customer's name]'s [house / mouth / laptop / yard].\"\n\"First, I [damage 1]. Then I [damage 2]. My best work? [damage 3, the funniest one].\"\n(THE CUSTOMER, out loud)\n\"But what if [the customer's main objection]?\"\n(THE PROBLEM, nervous now)\n\"Oh no. They booked [offer] with [business].\"\n(YOUR SERVICE throws the character out)\n\"[Short, funny exit line, e.g. 'I'll be back! Probably not.']\"\n(THE HAPPY AFTER)\n\"Now [the customer's happy result]. [Offer price or detail]. [Call to action].\""
     },
     {
       "id": "dont-buy-this",
@@ -374,7 +377,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Photorealistic comedy photo of an exhausted but happy woman landscaper in a green polo shirt and work gloves standing in front of her truck, with a long line of eager neighbors holding coffee and waving behind her down the street. She holds up a hand-lettered cardboard sign that reads \"DON'T HIRE ME\". Documentary look, natural daylight, vertical 9:16."
-      }
+      },
+      "sample": "(CUSTOMER 1: a [customer type 1], exhausted but happy)\n\"Don't buy [brand]. Seriously. Since I did, [complaint that is really result 1].\"\n(CUSTOMER 2: a [customer type 2])\n\"Do not sign up. Now [complaint that is really result 2], and I have to [funny consequence].\"\n(CUSTOMER 3: a [customer type 3])\n\"I used to [old pain]. Now the only thing that stresses me out is [result 3, said as a complaint].\"\n(CUSTOMER 4: a [customer type 4], to camera, close up)\n\"This is getting out of hand. [Result 4, as a complaint].\"\n(WARNING CARD)\n\"WARNING: [brand] may cause [result], [result] and [result]. Use at your own risk.\"\n(ALL OF THEM)\n\"Whatever you do... don't click that link.\""
     },
     {
       "id": "mockumentary",
@@ -448,7 +452,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "16:9",
         "prompt": "Photorealistic mockumentary film still in a beige open-plan office with grey cubicles, a water cooler and fluorescent lights. A man in his thirties with a short-sleeve shirt and tie sits for an interview straight to camera with a stunned, wide-eyed expression, two coworkers blurred in the background peeking over a cubicle. Documentary framing, 16:9, slightly flat office color. No text."
-      }
+      },
+      "sample": "(INTERVIEW 1: a coworker, stunned)\n\"So [name] just... [double-meaning line about the problem]. In the middle of the meeting.\"\n(INTERVIEW 2: another coworker, uncomfortable)\n\"Nobody wants to see that. Nobody. I saw [reaction from the room].\"\n(INTERVIEW 3: the boss, trying to be calm)\n\"We have a policy. You do not [double-meaning line] in front of [clients / the team].\"\n(THE CAMERA OPERATOR, off screen)\n\"What exactly are we talking about here?\"\n(COWORKER 1)\n\"His [the real thing: ads / pipes / buns / rack].\"\n(THE PRESENTER, at the whiteboard)\n\"If [the real problem], people [what they do: scroll past / leave / never call]. [Business] helps you [result].\"\n(SIGN GAG: a sign that reads [final pun])\n\"[Call to action].\""
     },
     {
       "id": "interpreter",
@@ -522,7 +527,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Colorful comic-book illustration of a cozy living room. A man in a bathrobe glares at a small fluffy dog barking furiously at the front window, his face red and steam puffing from his ears. Next to him, a small calm blue cartoon sound-wave creature wearing round glasses, a white lab coat and a cap that reads \"DOG INTERPRETER\" takes notes on a clipboard. Bold outlines, bright flat colors, vertical 9:16."
-      }
+      },
+      "sample": "(SCENE 1: [the customer] in an everyday moment, reacting way too much to [small thing])\n\"[Over-the-top line about the small thing]!\"\n(THE INTERPRETER, calm, clipboard in hand)\n\"Translation: [the real cause, said plainly]. They would simply like [the small, reasonable thing].\"\n(SCENE 2: worse)\n\"[Even bigger reaction to an even smaller thing]!\"\n(THE INTERPRETER)\n\"Translation: [the real cause again, a little funnier].\"\n(SCENE 3: total chaos)\n(THE INTERPRETER, holding up [product])\n\"[Product] [what it does in plain words].\"\n(REFRAME)\n\"It's not you. It's your [cause]. [Business] can help. [Call to action].\""
     },
     {
       "id": "obvious-actor",
@@ -587,7 +593,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Photo of a friendly middle-aged man dressed as an obviously fake comic character: an enormous fake bushy beard, a bright bucket hat, aviator sunglasses and a Hawaiian shirt, wearing a name tag that reads \"HELLO MY NAME IS GUSTAVO\". He stands proudly in front of a small shop, thumbs up, vertical 9:16, natural daylight, playful."
-      }
+      },
+      "sample": "(THE CHARACTER, in a ridiculous costume, name tag: [CHARACTER NAME])\n\"Hello. My name is [character name]. I am a completely real customer.\"\n(CARD: \"[Character name], BEFORE [brand]\")\n\"I had [the before: zero leads / no energy / no dates]. I was [funny sad detail].\"\n(CARD: \"[Character name], AFTER [brand]\")\n\"Now I have [the after]. I had to [funny consequence of success].\"\n(THE CHARACTER, leaning in)\n\"Do I look like I'm lying? [Beat.] Don't answer that.\"\n(END CARD)\n\"[Offer]. [Call to action].\""
     },
     {
       "id": "jingle",
@@ -655,7 +662,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Pixar-style 3D cartoon of a cheerful woman with curly red hair in a yellow jacket singing into a vintage microphone on a rooftop stage at sunset, holding up a sign that reads \"CALLING ALL BUSINESS OWNERS\", a crowd of cartoon people dancing below, confetti in the air, bright saturated colors, vertical 9:16."
-      }
+      },
+      "sample": "(INTRO, cartoon you at the mic)\n\"Calling all [audience]! Yeah, you!\"\n(VERSE: the pain)\n\"Tired of [pain 1], [pain 2] every day,\n(pain 3) getting in your way.\"\n(PRE-CHORUS: what they want)\n\"You just want [desire], you want it fast,\nyou want [desire 2] that's built to last.\"\n(CHORUS: the result)\n\"[Business]! [Result in four words]!\n(Business)! [Result, said another way]!\nLink below, don't wait, don't stall,\n(short rhyme with the call to action)!\"\n(OUTRO)\n\"[Offer]. Link below.\""
     },
     {
       "id": "clone-anywhere",
@@ -724,7 +732,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "9:16",
         "prompt": "Photorealistic photo of a confident woman in her thirties with a dark bob haircut and a mustard blazer, talking to camera in a retro bowling alley with neon lights. In the background, a man in a full hot dog costume stands perfectly still beside a ball return and stares at the camera. Natural light, shallow depth of field, vertical 9:16. No text."
-      }
+      },
+      "sample": "(YOUR CLONE in [surprising place], talking straight to camera. In the background: [odd detail], never mentioned)\n\"[Hook in under 3 seconds: a question or a bold claim about the problem].\"\n\"Here's the thing most [audience] get wrong: [the mistake].\"\n\"[Your main point, in one or two lines].\"\n\"[One proof: a number, a result, a short story].\"\n(THE ODD DETAIL does one small thing: waves, sips coffee, bowls a strike)\n\"[Call to action]. And no, I don't know who that is either.\""
     },
     {
       "id": "spokes-character",
@@ -793,7 +802,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "16:9",
         "prompt": "Character sheet of a brand mascot for a home insurance company: a friendly round orange owl wearing a tiny blue hard hat and a reflective safety vest, Pixar-style 3D. Full body front view, three-quarter view, side view, and four facial expressions (happy, surprised, serious, laughing) in a row. Plain light-grey background, clean studio light, 16:9. No text."
-      }
+      },
+      "sample": "(SPOKES-CHARACTER: [name], the face of [business], in [setting])\n\"Hi, I'm [name] from [business].\"\n(HOOK, pick one: a question / a bold claim / a short story / a common mistake / the offer)\n\"[Hook line].\"\n\"[One sentence about the problem your customer has].\"\n\"[One sentence about how the business fixes it].\"\n\"[One proof: a number, a neighbor, a result].\"\n\"[Offer]. [Call to action]. See you next time.\""
     },
     {
       "id": "sky-tour",
@@ -867,7 +877,8 @@ window.SVE_VIRAL = {
       "example": {
         "aspect": "16:9",
         "prompt": "Cinematic aerial drone photo at golden hour of a modern single-story desert home with a turquoise pool, white stucco walls, large glass windows and palm trees, saguaro cacti and rocky hills in the background, warm sunset light, wide shot from above and behind, photorealistic real estate photography, 16:9. No text, no people."
-      }
+      },
+      "sample": "(SHOT 1, aerial pull-back from [hero photo])  TEXT: [size] · [city]\n(SHOT 2, push-in through [living space photo])  TEXT: [headline feature]\n(SHOT 3, slow pan across [kitchen or dining photo])  TEXT: [second feature]\n(SHOT 4, glide into [main bedroom or bath photo])  TEXT: [beds] bed · [baths] bath\n(SHOT 5, rise over [view or neighborhood photo])  TEXT: [lifestyle line: 5 minutes to the beach]\n(SHOT 6, end card)  TEXT: [agent name] · [brokerage] · [call to action]\nMUSIC: [mood: warm acoustic / cinematic / upbeat], no voiceover."
     }
   ]
 };

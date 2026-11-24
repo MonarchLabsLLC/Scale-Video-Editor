@@ -12,6 +12,7 @@ const updater = require('./updater');
 const guide = require('./guide');
 const toolkit = require('./toolkit');
 const brands = require('./brands');
+const knowledge = require('./knowledge');
 const models = require('./models');
 const voices = require('./voices');
 
@@ -164,6 +165,18 @@ async function takeSnapshots() {
   await js("document.querySelectorAll('*').forEach(e => { if (e.scrollHeight > e.clientHeight + 50) e.scrollTop = e.scrollHeight; })"); await wait(300); await shot('7c-viral-prompts');
   await js("[...document.querySelectorAll('button')].find(b => b.textContent === 'Make this video').click()"); await wait(500); await shot('7d-viral-interview');
   await js("document.querySelector('.sheet-close') && document.querySelector('.sheet-close').click()");
+  // Brand knowledge. Seeds a sample document only in a throwaway projects folder (SVE_PROJECTS_ROOT).
+  if (process.env.SVE_PROJECTS_ROOT && !knowledge.list().length) {
+    knowledge.saveText({ name: 'Bright Smile Dental', text: '# Bright Smile Dental\n\nBright Smile Dental is a family dentist in Austin, Texas. We help busy parents keep the whole family\'s teeth healthy without the stress.\n\n## Offer\nNew-patient cleaning and exam: $47.\n\n## Audience\nParents aged 30 to 50 who put their own checkups last.\n\n## Pains\n- Bad breath they notice on calls\n- Bleeding gums when they brush\n- Fear of the drill\n\n## Voice\nWarm, funny, never preachy.' });
+    knowledge.saveText({ name: 'Customer avatar', text: '# Customer avatar\n\nBusy parent, two kids, works from home, books everything on a phone after 9 pm.' });
+  }
+  await js("refreshKnowledge().then(() => { window.__sve.state.brandTab = 'knowledge'; window.__sve.go({ view: 'brands' }); })"); await wait(700); await shot('8-knowledge');
+  const kdoc = knowledge.list()[0];
+  if (kdoc) { await js(`window.__sve.go({ view: 'knowledge-doc', id: ${JSON.stringify(kdoc.id)} })`); await wait(700); await shot('8b-knowledge-doc'); }
+  await js("window.__sve.state.brandTab = 'style'; window.__sve.go({ view: 'home' })"); await wait(500);
+  await js("document.querySelector('.knowledge-pick .mini-select')?.click()"); await wait(300); await shot('8c-knowledge-picker');
+  await js("document.body.click(); window.__sve.go({ view: 'viral', id: 'problem-speaks' })"); await wait(500);
+  await js("document.querySelector('.vsample')?.scrollIntoView({ block: 'center' })"); await wait(300); await shot('8d-viral-sample');
   // Brand Guides. SVE_SNAPSHOT_BRANDS="site.com,https://link/DESIGN.md" adds those first (needs the network).
   for (const link of (process.env.SVE_SNAPSHOT_BRANDS || '').split(',').filter(Boolean)) {
     try { await importBrandUrl(link); } catch (err) { console.error('brand', link, err.message); }
@@ -403,6 +416,7 @@ function registerIpc() {
   ipcMain.handle('projects:update', (_e, id, patch) => {
     const allowed = {};
     for (const k of ['engine', 'model', 'brand', 'voice']) if (k in patch) allowed[k] = patch[k];
+    if (Array.isArray(patch.knowledge)) allowed.knowledge = patch.knowledge.filter(x => typeof x === 'string').slice(0, 20);
     if ('engine' in patch) allowed.session = null; // a session belongs to one agent
     return projects.update(id, allowed);
   });
@@ -439,6 +453,21 @@ function registerIpc() {
   ipcMain.handle('brands:duplicate', (_e, id) => brands.duplicate(id));
   ipcMain.handle('brands:trash', async (_e, id) => { await shell.trashItem(brands.resolve(id)); return true; });
 
+  /* ---------- brand knowledge documents ---------- */
+  ipcMain.handle('knowledge:list', () => knowledge.list());
+  ipcMain.handle('knowledge:get', (_e, id) => knowledge.get(id));
+  ipcMain.handle('knowledge:pickFiles', async () => {
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Add brand knowledge documents', properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Documents', extensions: knowledge.FILE_TYPES.map(e => e.slice(1)) }]
+    });
+    return r.canceled ? [] : r.filePaths;
+  });
+  ipcMain.handle('knowledge:importFile', (_e, file) => knowledge.importFile(String(file)));
+  ipcMain.handle('knowledge:saveText', (_e, { name, text }) => knowledge.saveText({ name: String(name || ''), text: String(text || '') }));
+  ipcMain.handle('knowledge:update', (_e, id, patch) => knowledge.update(id, { name: patch && patch.name, text: patch && patch.text }));
+  ipcMain.handle('knowledge:trash', async (_e, id) => { await shell.trashItem(knowledge.resolve(id)); return true; });
+
   ipcMain.handle('agent:send', async (_e, { projectId, prompt, attachments }) => {
     if (running.has(projectId)) throw new Error('The agent is still working on this project.');
     const project = projects.get(projectId);
@@ -459,6 +488,7 @@ function registerIpc() {
       filmcraft: fcStatus.bridge,
       mcpScript: mcpScript(),
       brand: project.brand ? brands.copyInto(project.brand, project.dir) : null,
+      knowledge: knowledge.copyInto(project.knowledge, project.dir),
       voice: (voices.forPrompt(project.voice != null ? project.voice : settings.voice) || {}).line || null
     };
     const handle = agents.runTurn(ctx, full, ev => {
@@ -561,6 +591,7 @@ app.whenReady().then(() => {
   loadShellPath();
   projects.setRoot(process.env.SVE_PROJECTS_ROOT || path.join(app.getPath('documents'), 'Scale Video Editor'));
   brands.setRoot(path.join(projects.getRoot(), 'Brand Guides'));
+  knowledge.setRoot(path.join(projects.getRoot(), 'Brand Knowledge'));
   protocol.handle('sve-media', req => {
     const u = new URL(req.url);
     let p = decodeURIComponent(u.pathname);

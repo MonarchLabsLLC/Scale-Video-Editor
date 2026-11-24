@@ -9,18 +9,48 @@
     "Every video wears out. Plan a fresh version every few weeks."
   ],
   "pipeline": [
-    { "step": "Pick a format", "detail": "Choose the one that fits your customer's problem. Click Make this video." },
-    { "step": "Answer a few questions", "detail": "Your business, your customer, your offer. The agent writes the script and shows it to you first." },
-    { "step": "Stills first", "detail": "The agent makes every character and scene as an image with Nano Banana 2.1, so the look stays the same from shot to shot." },
-    { "step": "Then motion and voice", "detail": "Each still becomes a short talking clip with Veo 3.1 or Kling. Voiceover comes from your ElevenLabs voice. Songs come from ElevenLabs Music." },
-    { "step": "Cut, caption, export", "detail": "The agent cuts the clips in FilmCraft, burns in captions, adds the call to action and exports 9:16 to your project's exports folder." }
+    {
+      "step": "Pick a format",
+      "detail": "Choose the one that fits your customer's problem. Click Make this video."
+    },
+    {
+      "step": "Answer a few questions",
+      "detail": "Your business, your customer, your offer. The agent writes the script and shows it to you first."
+    },
+    {
+      "step": "Stills first",
+      "detail": "The agent makes every character and scene as an image with Nano Banana 2.1, so the look stays the same from shot to shot."
+    },
+    {
+      "step": "Then motion and voice",
+      "detail": "Each still becomes a short talking clip with Veo 3.1 or Kling. Voiceover comes from your ElevenLabs voice. Songs come from ElevenLabs Music."
+    },
+    {
+      "step": "Cut, caption, export",
+      "detail": "The agent cuts the clips in FilmCraft, burns in captions, adds the call to action and exports 9:16 to your project's exports folder."
+    }
   ],
   "tools": [
-    { "name": "Nano Banana 2.1 (GenMedia)", "detail": "Characters, scenes, mascots, style changes. Keep one image per character and reuse it." },
-    { "name": "Veo 3.1 and Kling (GenMedia)", "detail": "Turns each still into a 5 to 8 second clip, with lip sync when a character talks." },
-    { "name": "ElevenLabs Music (GenMedia)", "detail": "Jingles and full songs from a short description and your lyrics." },
-    { "name": "my-voice (ElevenLabs)", "detail": "Narration in your own cloned voice, or one of your saved voices." },
-    { "name": "FilmCraft", "detail": "The timeline. The agent cuts, captions and exports, and you can edit by hand at any time." }
+    {
+      "name": "Nano Banana 2.1 (GenMedia)",
+      "detail": "Characters, scenes, mascots, style changes. Keep one image per character and reuse it."
+    },
+    {
+      "name": "Veo 3.1 and Kling (GenMedia)",
+      "detail": "Turns each still into a 5 to 8 second clip, with lip sync when a character talks."
+    },
+    {
+      "name": "ElevenLabs Music (GenMedia)",
+      "detail": "Jingles and full songs from a short description and your lyrics."
+    },
+    {
+      "name": "my-voice (ElevenLabs)",
+      "detail": "Narration in your own cloned voice, or one of your saved voices."
+    },
+    {
+      "name": "FilmCraft",
+      "detail": "The timeline. The agent cuts, captions and exports, and you can edit by hand at any time."
+    }
   ],
   "formats": [
     {
@@ -40,23 +70,67 @@
         "It fits any niche because the gag is the look, not the topic.",
         "It is cheap to test: you reuse a script you already have."
       ],
-      "beats": ["Bobblehead hook in wild action", "\"Hey [audience]\" and who is talking", "3 to 6 quick bobblehead customer lines", "The offer", "Call to action"],
+      "beats": [
+        "Bobblehead hook in wild action",
+        "\"Hey [audience]\" and who is talking",
+        "3 to 6 quick bobblehead customer lines",
+        "The offer",
+        "Call to action"
+      ],
       "ideas": [
-        { "who": "Realtor", "idea": "Bobblehead agent sliding down the banister of a listing" },
-        { "who": "Financial advisor", "idea": "Bobblehead in front of a wall of rising charts" },
-        { "who": "Coach", "idea": "Bobblehead leading a video call full of bobbleheads" },
-        { "who": "Author", "idea": "Bobblehead signing a stack of books taller than they are" },
-        { "who": "Café or restaurant", "idea": "Bobblehead owner flipping pancakes too high" },
-        { "who": "Any business", "idea": "Your own bobblehead clone in an absurd action shot to open" }
+        {
+          "who": "Realtor",
+          "idea": "Bobblehead agent sliding down the banister of a listing"
+        },
+        {
+          "who": "Financial advisor",
+          "idea": "Bobblehead in front of a wall of rising charts"
+        },
+        {
+          "who": "Coach",
+          "idea": "Bobblehead leading a video call full of bobbleheads"
+        },
+        {
+          "who": "Author",
+          "idea": "Bobblehead signing a stack of books taller than they are"
+        },
+        {
+          "who": "Café or restaurant",
+          "idea": "Bobblehead owner flipping pancakes too high"
+        },
+        {
+          "who": "Any business",
+          "idea": "Your own bobblehead clone in an absurd action shot to open"
+        }
       ],
       "prompts": [
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Photorealistic comedy photo of [person: hair, face, outfit] with a hugely oversized caricature head, about three times normal size, on a normal body. Wide delighted grin. [Action: racing down a city sidewalk on an electric scooter]. Bright cinematic light, shallow depth of field, vertical 9:16, sharp detail." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. The bobblehead [person] keeps [the action: the scooter zooms forward, hair flapping] while the camera tracks beside them. They turn to the lens and say with big energy: \"[first line of your script]\". Accurate lip sync, a gentle bobblehead wobble, upbeat comedy music, 8 seconds, vertical." },
-        { "label": "Motion (no image)", "tool": "Veo 3.1", "text": "8-second vertical video. A [profession] with a comically huge head on a normal body stands in [setting] holding [prop] and says straight to camera: \"[one line]\". Realistic look, bright light, the head wobbles a little with each word." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 30-second vertical ad for [business] aimed at [audience]. Start with a hook line. Then 5 short lines, each spoken by a different customer type ([list them]), each naming one way they use [product]. Finish with a one-line offer and a call to action. No line longer than 12 words. Playful. Every speaker appears as a bobblehead." }
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Photorealistic comedy photo of [person: hair, face, outfit] with a hugely oversized caricature head, about three times normal size, on a normal body. Wide delighted grin. [Action: racing down a city sidewalk on an electric scooter]. Bright cinematic light, shallow depth of field, vertical 9:16, sharp detail."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. The bobblehead [person] keeps [the action: the scooter zooms forward, hair flapping] while the camera tracks beside them. They turn to the lens and say with big energy: \"[first line of your script]\". Accurate lip sync, a gentle bobblehead wobble, upbeat comedy music, 8 seconds, vertical."
+        },
+        {
+          "label": "Motion (no image)",
+          "tool": "Veo 3.1",
+          "text": "8-second vertical video. A [profession] with a comically huge head on a normal body stands in [setting] holding [prop] and says straight to camera: \"[one line]\". Realistic look, bright light, the head wobbles a little with each word."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 30-second vertical ad for [business] aimed at [audience]. Start with a hook line. Then 5 short lines, each spoken by a different customer type ([list them]), each naming one way they use [product]. Finish with a one-line offer and a call to action. No line longer than 12 words. Playful. Every speaker appears as a bobblehead."
+        }
       ],
       "brief": "Make a 30-second vertical Bobblehead video: every person on screen has a giant caricature head on a normal body.\nBusiness: [your business]\nAudience: [who it is for]\nCustomer types to show: [3 to 6 types]\nOffer and call to action: [offer]\nOpening action shot: [wild action, or you decide]\nScript: [paste your script, or say: write it for me]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "Photorealistic comedy photo of a cheerful man in his forties with short dark hair and a navy blazer, with a hugely oversized caricature head about three times normal size on a normal body, wide delighted grin, racing down a sunny city sidewalk on an electric scooter, tie flapping, pedestrians staring. Bright cinematic light, shallow depth of field, vertical 9:16, sharp detail. No text." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Photorealistic comedy photo of a cheerful man in his forties with short dark hair and a navy blazer, with a hugely oversized caricature head about three times normal size on a normal body, wide delighted grin, racing down a sunny city sidewalk on an electric scooter, tie flapping, pedestrians staring. Bright cinematic light, shallow depth of field, vertical 9:16, sharp detail. No text."
+      },
+      "sample": "(BOBBLEHEAD YOU, doing something wild: racing a shopping scooter down Main Street)\n\"Hey, [audience]! I'm [your name] from [business], and yes, my head really is this big.\"\n(BOBBLEHEAD CUSTOMER 1: a [customer type 1] in [their workplace])\n\"[Customer type 1]s use [business] to [benefit 1].\"\n(BOBBLEHEAD CUSTOMER 2: a [customer type 2] in [their workplace])\n\"[Customer type 2]s use it to [benefit 2], without [pain they hate].\"\n(BOBBLEHEAD CUSTOMER 3: a [customer type 3])\n\"And [customer type 3]s? They finally [result they want].\"\n(BOBBLEHEAD YOU, back on the scooter)\n\"[Offer in one line]. Click the link before my head gets any bigger.\""
     },
     {
       "id": "things-that-talk",
@@ -74,25 +148,75 @@
         "The complaint states the pain without a lecture.",
         "A good talking object can come back in a whole series, like a mascot."
       ],
-      "beats": ["Object 1 states the problem", "Object 2 piles on", "Object 3 adds the absurd detail", "Sight gag", "Your fix and call to action"],
+      "beats": [
+        "Object 1 states the problem",
+        "Object 2 piles on",
+        "Object 3 adds the absurd detail",
+        "Sight gag",
+        "Your fix and call to action"
+      ],
       "ideas": [
-        { "who": "Realtor", "idea": "An unsold house, its mailbox and the lawn sign" },
-        { "who": "Plumber", "idea": "A dripping faucet and an exhausted bucket" },
-        { "who": "Accountant", "idea": "A shoebox of receipts begging to be sorted" },
-        { "who": "Personal trainer", "idea": "A dusty gym bag that misses the gym" },
-        { "who": "Author", "idea": "A book on the shelf asking to be opened" },
-        { "who": "Podcast booking agency", "idea": "Two lonely microphones waiting for a guest" },
-        { "who": "Bakery", "idea": "A croissant bragging about its layers" },
-        { "who": "Dentist", "idea": "A worn-out toothbrush asking for retirement" }
+        {
+          "who": "Realtor",
+          "idea": "An unsold house, its mailbox and the lawn sign"
+        },
+        {
+          "who": "Plumber",
+          "idea": "A dripping faucet and an exhausted bucket"
+        },
+        {
+          "who": "Accountant",
+          "idea": "A shoebox of receipts begging to be sorted"
+        },
+        {
+          "who": "Personal trainer",
+          "idea": "A dusty gym bag that misses the gym"
+        },
+        {
+          "who": "Author",
+          "idea": "A book on the shelf asking to be opened"
+        },
+        {
+          "who": "Podcast booking agency",
+          "idea": "Two lonely microphones waiting for a guest"
+        },
+        {
+          "who": "Bakery",
+          "idea": "A croissant bragging about its layers"
+        },
+        {
+          "who": "Dentist",
+          "idea": "A worn-out toothbrush asking for retirement"
+        }
       ],
       "prompts": [
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Pixar-style 3D render of a [object: chrome kitchen faucet] with a friendly cartoon face: big expressive eyes, bushy eyebrows, a mouth. It looks [tired and annoyed]. [Setting: a sunny kitchen sink with a bucket underneath catching drips]. Warm light, vertical 9:16, rich detail." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. The [object] talks to camera with clear mouth movement and says in a [weary, sarcastic] voice: \"[Drip. Drip. Eleven days, and nobody's called the plumber.]\" Small wiggles, slow push-in, [a single drip sound], 8 seconds, vertical." },
-        { "label": "Motion (no image)", "tool": "Veo 3.1", "text": "Vertical 9:16, 3D animated look. Three talking objects in [place]: a [object 1], a [object 2] and a [object 3], each with a cartoon face. Object 1 says: \"[line]\". Object 2 replies: \"[line]\". Comic pauses, light quirky music." },
-        { "label": "Script", "tool": "Agent", "text": "My business is [business]. List 10 everyday objects my customers live with that could talk. For the best 3, write a 20-second scene where they grumble about [the customer's problem], land a joke, and close with a one-line call to action for [offer]. Lines under 12 words." }
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Pixar-style 3D render of a [object: chrome kitchen faucet] with a friendly cartoon face: big expressive eyes, bushy eyebrows, a mouth. It looks [tired and annoyed]. [Setting: a sunny kitchen sink with a bucket underneath catching drips]. Warm light, vertical 9:16, rich detail."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. The [object] talks to camera with clear mouth movement and says in a [weary, sarcastic] voice: \"[Drip. Drip. Eleven days, and nobody's called the plumber.]\" Small wiggles, slow push-in, [a single drip sound], 8 seconds, vertical."
+        },
+        {
+          "label": "Motion (no image)",
+          "tool": "Veo 3.1",
+          "text": "Vertical 9:16, 3D animated look. Three talking objects in [place]: a [object 1], a [object 2] and a [object 3], each with a cartoon face. Object 1 says: \"[line]\". Object 2 replies: \"[line]\". Comic pauses, light quirky music."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "My business is [business]. List 10 everyday objects my customers live with that could talk. For the best 3, write a 20-second scene where they grumble about [the customer's problem], land a joke, and close with a one-line call to action for [offer]. Lines under 12 words."
+        }
       ],
       "brief": "Make a 20 to 30-second vertical Things That Talk video: everyday objects with cartoon faces complain about my customer's problem.\nBusiness: [your business]\nThe customer's problem: [problem]\nObjects to use: [objects, or you decide]\nOffer and call to action: [offer]\nLook: [Pixar-style 3D / realistic / you decide]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "Pixar-style 3D render of a chrome kitchen faucet with a friendly cartoon face: big expressive brown eyes, bushy eyebrows, a grumpy mouth, looking tired and annoyed. A single water drop falls into a tired-looking orange bucket under the sink, which also has a small cartoon face. Sunny kitchen, warm light, vertical 9:16, rich detail. No text." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Pixar-style 3D render of a chrome kitchen faucet with a friendly cartoon face: big expressive brown eyes, bushy eyebrows, a grumpy mouth, looking tired and annoyed. A single water drop falls into a tired-looking orange bucket under the sink, which also has a small cartoon face. Sunny kitchen, warm light, vertical 9:16, rich detail. No text."
+      },
+      "sample": "(OBJECT 1: the [object 1 from your customer's world], with a cartoon face, fed up)\n\"[Number] [days / weeks / months] of [the problem], and nobody has done a thing.\"\n(OBJECT 2: the [object 2], piling on)\n\"Tell me about it. I've been [absurd consequence of the problem] since [time].\"\n(OBJECT 3: the [object 3], the drama queen)\n\"I'm not saying it's bad, but [a small animal / a neighbor] just [ridiculous sight gag].\"\n(ALL THREE, staring at the camera)\n\"Somebody. Please. Call [business].\"\n(END CARD)\n\"[What you do, in five words]. [Offer]. [Call to action].\""
     },
     {
       "id": "problem-speaks",
@@ -110,25 +234,76 @@
         "A villain can say gross things in a funny way.",
         "The before and after happen inside a story, so it never feels like a pitch."
       ],
-      "beats": ["\"I'm [name]. I'm the [problem].\"", "Brags about the damage", "An objection, said out loud", "Your service arrives", "The happy after", "Offer and call to action"],
+      "beats": [
+        "\"I'm [name]. I'm the [problem].\"",
+        "Brags about the damage",
+        "An objection, said out loud",
+        "Your service arrives",
+        "The happy after",
+        "Offer and call to action"
+      ],
       "ideas": [
-        { "who": "Lawn care", "idea": "A cocky dandelion running the yard" },
-        { "who": "Dentist", "idea": "A smug cavity moving into a molar" },
-        { "who": "Pest control", "idea": "An ant colony foreman with a hard hat" },
-        { "who": "Gym or diet", "idea": "Stubborn belly fat that refuses to pack up" },
-        { "who": "Skin care", "idea": "A pimple throwing a party" },
-        { "who": "IT support", "idea": "A laptop virus wearing sunglasses" },
-        { "who": "Debt help", "idea": "A credit card bill that keeps growing" },
-        { "who": "Home organizer", "idea": "A pile of clutter that thinks it lives there" }
+        {
+          "who": "Lawn care",
+          "idea": "A cocky dandelion running the yard"
+        },
+        {
+          "who": "Dentist",
+          "idea": "A smug cavity moving into a molar"
+        },
+        {
+          "who": "Pest control",
+          "idea": "An ant colony foreman with a hard hat"
+        },
+        {
+          "who": "Gym or diet",
+          "idea": "Stubborn belly fat that refuses to pack up"
+        },
+        {
+          "who": "Skin care",
+          "idea": "A pimple throwing a party"
+        },
+        {
+          "who": "IT support",
+          "idea": "A laptop virus wearing sunglasses"
+        },
+        {
+          "who": "Debt help",
+          "idea": "A credit card bill that keeps growing"
+        },
+        {
+          "who": "Home organizer",
+          "idea": "A pile of clutter that thinks it lives there"
+        }
       ],
       "prompts": [
-        { "label": "Still image (villain)", "tool": "Nano Banana 2.1", "text": "3D claymation-style villain character: [name], a [problem: spiky yellow dandelion] with a smug grin, tiny sunglasses and crossed arms, standing in [a patchy suburban lawn it has taken over]. Dramatic low angle, warm light, vertical 9:16." },
-        { "label": "Still image (sad hero)", "tool": "Nano Banana 2.1", "text": "Pixar-style 3D character: a [thing that suffers: tired green lawn tile] with small arms, legs and an expressive face, looking [embarrassed], holding [an old photo of itself looking lush]. Soft cinematic light, vertical 9:16." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. [Character] looks at the camera and says: \"[I'm Doug. I'm a dandelion. I own this yard now, and the neighbors are jealous.]\" Smug look, small gestures, slow push-in, 8 seconds, vertical." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 30-second ad for [business] narrated by [the customer's problem] as a character. Beats: it introduces itself, brags about 3 things it does to the customer, the customer books [offer], it gets thrown out, then the happy after state and a call to action. Short, punchy lines." }
+        {
+          "label": "Still image (villain)",
+          "tool": "Nano Banana 2.1",
+          "text": "3D claymation-style villain character: [name], a [problem: spiky yellow dandelion] with a smug grin, tiny sunglasses and crossed arms, standing in [a patchy suburban lawn it has taken over]. Dramatic low angle, warm light, vertical 9:16."
+        },
+        {
+          "label": "Still image (sad hero)",
+          "tool": "Nano Banana 2.1",
+          "text": "Pixar-style 3D character: a [thing that suffers: tired green lawn tile] with small arms, legs and an expressive face, looking [embarrassed], holding [an old photo of itself looking lush]. Soft cinematic light, vertical 9:16."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. [Character] looks at the camera and says: \"[I'm Doug. I'm a dandelion. I own this yard now, and the neighbors are jealous.]\" Smug look, small gestures, slow push-in, 8 seconds, vertical."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 30-second ad for [business] narrated by [the customer's problem] as a character. Beats: it introduces itself, brags about 3 things it does to the customer, the customer books [offer], it gets thrown out, then the happy after state and a call to action. Short, punchy lines."
+        }
       ],
       "brief": "Make a 30-second vertical The Problem Speaks video: my customer's problem is a character who brags until my business throws it out.\nBusiness: [your business]\nThe problem as a character: [problem, e.g. weeds, plaque]\nVillain or sad hero: [villain / sad hero / you decide]\nOffer and call to action: [offer]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "3D claymation-style villain character: a spiky bright yellow dandelion with a smug grin, tiny black sunglasses and crossed leaf arms, standing tall in a patchy suburban front lawn it has taken over, small dandelion minions behind it. Dramatic low angle, warm late-afternoon light, vertical 9:16. No text." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "3D claymation-style villain character: a spiky bright yellow dandelion with a smug grin, tiny black sunglasses and crossed leaf arms, standing tall in a patchy suburban front lawn it has taken over, small dandelion minions behind it. Dramatic low angle, warm late-afternoon light, vertical 9:16. No text."
+      },
+      "sample": "(THE PROBLEM as a smug character: [problem character name], the [problem])\n\"Hi. I'm [character name]. I'm [the problem]. I live at [customer's name]'s [house / mouth / laptop / yard].\"\n\"First, I [damage 1]. Then I [damage 2]. My best work? [damage 3, the funniest one].\"\n(THE CUSTOMER, out loud)\n\"But what if [the customer's main objection]?\"\n(THE PROBLEM, nervous now)\n\"Oh no. They booked [offer] with [business].\"\n(YOUR SERVICE throws the character out)\n\"[Short, funny exit line, e.g. 'I'll be back! Probably not.']\"\n(THE HAPPY AFTER)\n\"Now [the customer's happy result]. [Offer price or detail]. [Call to action].\""
     },
     {
       "id": "dont-buy-this",
@@ -146,22 +321,63 @@
         "It lists your results as proof without sounding like bragging.",
         "The humor makes people like you, and people buy from brands they like."
       ],
-      "beats": ["\"Don't buy [brand]\" hook", "4 to 6 complaints that are really results", "Each one sillier than the last", "Mock WARNING card", "\"Don't click that link\""],
+      "beats": [
+        "\"Don't buy [brand]\" hook",
+        "4 to 6 complaints that are really results",
+        "Each one sillier than the last",
+        "Mock WARNING card",
+        "\"Don't click that link\""
+      ],
       "ideas": [
-        { "who": "Course or coaching", "idea": "\"Don't take this course. Now my calendar is full.\"" },
-        { "who": "Gym", "idea": "\"Don't join. I had to buy all new pants.\"" },
-        { "who": "Realtor", "idea": "\"Don't list with her. It sold in two days and now we have to pack.\"" },
-        { "who": "Restaurant", "idea": "\"Don't eat here. My own cooking tastes sad now.\"" },
-        { "who": "Accountant", "idea": "\"Don't hire them. Tax season is boring now.\"" }
+        {
+          "who": "Course or coaching",
+          "idea": "\"Don't take this course. Now my calendar is full.\""
+        },
+        {
+          "who": "Gym",
+          "idea": "\"Don't join. I had to buy all new pants.\""
+        },
+        {
+          "who": "Realtor",
+          "idea": "\"Don't list with her. It sold in two days and now we have to pack.\""
+        },
+        {
+          "who": "Restaurant",
+          "idea": "\"Don't eat here. My own cooking tastes sad now.\""
+        },
+        {
+          "who": "Accountant",
+          "idea": "\"Don't hire them. Tax season is boring now.\""
+        }
       ],
       "prompts": [
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Photorealistic comedy photo of an exhausted but happy [profession] in [their workplace], surrounded by [a line of eager customers out the door]. They hold up a hand-lettered sign that reads \"DON'T BUY [BRAND]\". Documentary look, vertical 9:16." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. The [profession] rubs their eyes and complains to camera: \"[Because of [brand], I have so many customers I haven't had lunch since Tuesday.]\" The crowd cheers behind them. Handheld documentary feel, 8 seconds, vertical." },
-        { "label": "Motion (warning card)", "tool": "Veo 3.1", "text": "Black screen. A bold red title \"WARNING\" slams in. White text below: \"[Side effects may include too many customers. Watch at your own risk.]\" Slow push-in, low ominous hum, 5 seconds." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 30-second anti-testimonial ad for [business]. Five different customers warn viewers NOT to [buy or join], but each complaint is really a result: [list results]. Make it funny and build it up. End with a fake WARNING card and \"Don't click that link.\"" }
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Photorealistic comedy photo of an exhausted but happy [profession] in [their workplace], surrounded by [a line of eager customers out the door]. They hold up a hand-lettered sign that reads \"DON'T BUY [BRAND]\". Documentary look, vertical 9:16."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. The [profession] rubs their eyes and complains to camera: \"[Because of [brand], I have so many customers I haven't had lunch since Tuesday.]\" The crowd cheers behind them. Handheld documentary feel, 8 seconds, vertical."
+        },
+        {
+          "label": "Motion (warning card)",
+          "tool": "Veo 3.1",
+          "text": "Black screen. A bold red title \"WARNING\" slams in. White text below: \"[Side effects may include too many customers. Watch at your own risk.]\" Slow push-in, low ominous hum, 5 seconds."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 30-second anti-testimonial ad for [business]. Five different customers warn viewers NOT to [buy or join], but each complaint is really a result: [list results]. Make it funny and build it up. End with a fake WARNING card and \"Don't click that link.\""
+        }
       ],
       "brief": "Make a 30-second vertical Don't Buy This video: customers warn people not to buy, and every complaint is really a result.\nBusiness: [your business]\nReal results to turn into complaints: [results]\nCustomer types: [types, or you decide]\nAdd bobbleheads too: [yes / no]\nCall to action: [what the link does]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "Photorealistic comedy photo of an exhausted but happy woman landscaper in a green polo shirt and work gloves standing in front of her truck, with a long line of eager neighbors holding coffee and waving behind her down the street. She holds up a hand-lettered cardboard sign that reads \"DON'T HIRE ME\". Documentary look, natural daylight, vertical 9:16." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Photorealistic comedy photo of an exhausted but happy woman landscaper in a green polo shirt and work gloves standing in front of her truck, with a long line of eager neighbors holding coffee and waving behind her down the street. She holds up a hand-lettered cardboard sign that reads \"DON'T HIRE ME\". Documentary look, natural daylight, vertical 9:16."
+      },
+      "sample": "(CUSTOMER 1: a [customer type 1], exhausted but happy)\n\"Don't buy [brand]. Seriously. Since I did, [complaint that is really result 1].\"\n(CUSTOMER 2: a [customer type 2])\n\"Do not sign up. Now [complaint that is really result 2], and I have to [funny consequence].\"\n(CUSTOMER 3: a [customer type 3])\n\"I used to [old pain]. Now the only thing that stresses me out is [result 3, said as a complaint].\"\n(CUSTOMER 4: a [customer type 4], to camera, close up)\n\"This is getting out of hand. [Result 4, as a complaint].\"\n(WARNING CARD)\n\"WARNING: [brand] may cause [result], [result] and [result]. Use at your own risk.\"\n(ALL OF THEM)\n\"Whatever you do... don't click that link.\""
     },
     {
       "id": "mockumentary",
@@ -179,22 +395,64 @@
         "The \"did they just say that?\" moment drives comments and shares.",
         "The lesson sits inside the joke."
       ],
-      "beats": ["Shocking opening line", "Coworkers react to camera", "Interruption and reveal", "The lesson", "Offer and call to action", "Closing sign gag"],
+      "beats": [
+        "Shocking opening line",
+        "Coworkers react to camera",
+        "Interruption and reveal",
+        "The lesson",
+        "Offer and call to action",
+        "Closing sign gag"
+      ],
       "ideas": [
-        { "who": "Marketing agency", "idea": "\"Nobody wants to see your junk\" (boring ads)" },
-        { "who": "Moving company", "idea": "\"He showed up with a huge package\"" },
-        { "who": "Plumber", "idea": "\"Your pipes are making noises again\"" },
-        { "who": "Bakery", "idea": "\"Everyone's talking about her buns\"" },
-        { "who": "Gym", "idea": "\"He keeps staring at my rack\" (the barbell rack)" }
+        {
+          "who": "Marketing agency",
+          "idea": "\"Nobody wants to see your junk\" (boring ads)"
+        },
+        {
+          "who": "Moving company",
+          "idea": "\"He showed up with a huge package\""
+        },
+        {
+          "who": "Plumber",
+          "idea": "\"Your pipes are making noises again\""
+        },
+        {
+          "who": "Bakery",
+          "idea": "\"Everyone's talking about her buns\""
+        },
+        {
+          "who": "Gym",
+          "idea": "\"He keeps staring at my rack\" (the barbell rack)"
+        }
       ],
       "prompts": [
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Photorealistic mockumentary film still in a beige open-plan office with cubicles and fluorescent lights. A [office worker] gives an interview straight to camera with a [stunned] expression, coworkers blurred behind. Documentary framing, 16:9." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. Mockumentary style, handheld camera, slow zoom on the face. The [office worker] says awkwardly into the lens: \"[He just showed it to everyone. In the meeting.]\" Long pause, then a glance at a coworker. 8 seconds." },
-        { "label": "Motion (reveal)", "tool": "Veo 3.1", "text": "Same office. A [presenter] stands beside a whiteboard that reads \"[NOBODY WANTS TO SEE YOUR JUNK. MAKE BETTER ADS.]\" and says to camera: \"[Make it fun to watch, and people might actually buy.]\" A coworker walks past in a trench coat. 8 seconds." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 45-second mockumentary parody ad in the style of a workplace sitcom for [business]. Use a double-meaning phrase that sounds inappropriate but is really about [the problem]. Include 3 interviews to camera, a reveal line, the lesson, and a call to action. Keep it PG-13." }
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Photorealistic mockumentary film still in a beige open-plan office with cubicles and fluorescent lights. A [office worker] gives an interview straight to camera with a [stunned] expression, coworkers blurred behind. Documentary framing, 16:9."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. Mockumentary style, handheld camera, slow zoom on the face. The [office worker] says awkwardly into the lens: \"[He just showed it to everyone. In the meeting.]\" Long pause, then a glance at a coworker. 8 seconds."
+        },
+        {
+          "label": "Motion (reveal)",
+          "tool": "Veo 3.1",
+          "text": "Same office. A [presenter] stands beside a whiteboard that reads \"[NOBODY WANTS TO SEE YOUR JUNK. MAKE BETTER ADS.]\" and says to camera: \"[Make it fun to watch, and people might actually buy.]\" A coworker walks past in a trench coat. 8 seconds."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 45-second mockumentary parody ad in the style of a workplace sitcom for [business]. Use a double-meaning phrase that sounds inappropriate but is really about [the problem]. Include 3 interviews to camera, a reveal line, the lesson, and a call to action. Keep it PG-13."
+        }
       ],
       "brief": "Make a 45-second Mockumentary Double Take video in a workplace-sitcom style, built on a double-meaning line that is really about my customer's problem.\nBusiness: [your business]\nThe real problem: [problem]\nDouble-meaning line: [line, or you decide]\nShape: [16:9 / 9:16 / both]\nCall to action: [offer]\nKeep it PG-13. Make the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "16:9", "prompt": "Photorealistic mockumentary film still in a beige open-plan office with grey cubicles, a water cooler and fluorescent lights. A man in his thirties with a short-sleeve shirt and tie sits for an interview straight to camera with a stunned, wide-eyed expression, two coworkers blurred in the background peeking over a cubicle. Documentary framing, 16:9, slightly flat office color. No text." }
+      "example": {
+        "aspect": "16:9",
+        "prompt": "Photorealistic mockumentary film still in a beige open-plan office with grey cubicles, a water cooler and fluorescent lights. A man in his thirties with a short-sleeve shirt and tie sits for an interview straight to camera with a stunned, wide-eyed expression, two coworkers blurred in the background peeking over a cubicle. Documentary framing, 16:9, slightly flat office color. No text."
+      },
+      "sample": "(INTERVIEW 1: a coworker, stunned)\n\"So [name] just... [double-meaning line about the problem]. In the middle of the meeting.\"\n(INTERVIEW 2: another coworker, uncomfortable)\n\"Nobody wants to see that. Nobody. I saw [reaction from the room].\"\n(INTERVIEW 3: the boss, trying to be calm)\n\"We have a policy. You do not [double-meaning line] in front of [clients / the team].\"\n(THE CAMERA OPERATOR, off screen)\n\"What exactly are we talking about here?\"\n(COWORKER 1)\n\"His [the real thing: ads / pipes / buns / rack].\"\n(THE PRESENTER, at the whiteboard)\n\"If [the real problem], people [what they do: scroll past / leave / never call]. [Business] helps you [result].\"\n(SIGN GAG: a sign that reads [final pun])\n\"[Call to action].\""
     },
     {
       "id": "interpreter",
@@ -212,22 +470,64 @@
         "The interpreter takes the blame off the customer.",
         "A bright illustrated look stands out in a feed of live action."
       ],
-      "beats": ["Normal moment, huge reaction", "The interpreter explains it", "Repeat, bigger each time", "Total chaos", "Product reveal", "Reframe line and call to action"],
+      "beats": [
+        "Normal moment, huge reaction",
+        "The interpreter explains it",
+        "Repeat, bigger each time",
+        "Total chaos",
+        "Product reveal",
+        "Reframe line and call to action"
+      ],
       "ideas": [
-        { "who": "Sleep or gut supplement", "idea": "A sleep or gut interpreter" },
-        { "who": "Dog trainer", "idea": "A dog-bark interpreter" },
-        { "who": "Couples counselor", "idea": "A spouse interpreter" },
-        { "who": "Baby products", "idea": "A baby-cry interpreter" },
-        { "who": "IT support", "idea": "An error-message interpreter" }
+        {
+          "who": "Sleep or gut supplement",
+          "idea": "A sleep or gut interpreter"
+        },
+        {
+          "who": "Dog trainer",
+          "idea": "A dog-bark interpreter"
+        },
+        {
+          "who": "Couples counselor",
+          "idea": "A spouse interpreter"
+        },
+        {
+          "who": "Baby products",
+          "idea": "A baby-cry interpreter"
+        },
+        {
+          "who": "IT support",
+          "idea": "An error-message interpreter"
+        }
       ],
       "prompts": [
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Colorful comic-book illustration of a living room. A [man] glares at [a dog barking at the window], face red, steam puffing from his ears. Next to him, a small calm cartoon [character: a blue sound wave creature] in a cap that reads \"[DOG INTERPRETER]\", round glasses and a lab coat, takes notes on a clipboard. 9:16." },
-        { "label": "Motion (from the still)", "tool": "Kling image-to-video", "text": "Animate this illustration. The dog barks wildly. The interpreter turns to the camera and says calmly: \"[He is saying: the mail carrier has returned, and he takes this very personally.]\" Comic timing, 8 seconds." },
-        { "label": "Motion (end card)", "tool": "Veo 3.1", "text": "The living room is in comic chaos, cushions everywhere. The interpreter holds up [the product]. Text appears: \"[It's not him. It's training. We can help.]\" 5 seconds." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 40-second ad for [product] using an interpreter character who explains what [the customer] really means when [the problem] makes them act out. Three scenes that get bigger each time, a chaotic peak, the product reveal, and the line \"It's not you. It's your [cause]. We can help.\"" }
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Colorful comic-book illustration of a living room. A [man] glares at [a dog barking at the window], face red, steam puffing from his ears. Next to him, a small calm cartoon [character: a blue sound wave creature] in a cap that reads \"[DOG INTERPRETER]\", round glasses and a lab coat, takes notes on a clipboard. 9:16."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Kling image-to-video",
+          "text": "Animate this illustration. The dog barks wildly. The interpreter turns to the camera and says calmly: \"[He is saying: the mail carrier has returned, and he takes this very personally.]\" Comic timing, 8 seconds."
+        },
+        {
+          "label": "Motion (end card)",
+          "tool": "Veo 3.1",
+          "text": "The living room is in comic chaos, cushions everywhere. The interpreter holds up [the product]. Text appears: \"[It's not him. It's training. We can help.]\" 5 seconds."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 40-second ad for [product] using an interpreter character who explains what [the customer] really means when [the problem] makes them act out. Three scenes that get bigger each time, a chaotic peak, the product reveal, and the line \"It's not you. It's your [cause]. We can help.\""
+        }
       ],
       "brief": "Make a 40-second vertical The Interpreter video: over-the-top everyday moments, and a calm interpreter character who explains the real cause.\nProduct or service: [your product]\nWhat the interpreter translates: [e.g. sleep, the dog, a baby, error messages]\nThe customer's moments: [3 moments, or you decide]\nReframe line: [It's not you. It's your ___.]\nLook: [comic-book / 3D cartoon / you decide]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "Colorful comic-book illustration of a cozy living room. A man in a bathrobe glares at a small fluffy dog barking furiously at the front window, his face red and steam puffing from his ears. Next to him, a small calm blue cartoon sound-wave creature wearing round glasses, a white lab coat and a cap that reads \"DOG INTERPRETER\" takes notes on a clipboard. Bold outlines, bright flat colors, vertical 9:16." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Colorful comic-book illustration of a cozy living room. A man in a bathrobe glares at a small fluffy dog barking furiously at the front window, his face red and steam puffing from his ears. Next to him, a small calm blue cartoon sound-wave creature wearing round glasses, a white lab coat and a cap that reads \"DOG INTERPRETER\" takes notes on a clipboard. Bold outlines, bright flat colors, vertical 9:16."
+      },
+      "sample": "(SCENE 1: [the customer] in an everyday moment, reacting way too much to [small thing])\n\"[Over-the-top line about the small thing]!\"\n(THE INTERPRETER, calm, clipboard in hand)\n\"Translation: [the real cause, said plainly]. They would simply like [the small, reasonable thing].\"\n(SCENE 2: worse)\n\"[Even bigger reaction to an even smaller thing]!\"\n(THE INTERPRETER)\n\"Translation: [the real cause again, a little funnier].\"\n(SCENE 3: total chaos)\n(THE INTERPRETER, holding up [product])\n\"[Product] [what it does in plain words].\"\n(REFRAME)\n\"It's not you. It's your [cause]. [Business] can help. [Call to action].\""
     },
     {
       "id": "obvious-actor",
@@ -245,20 +545,55 @@
         "Laughing at yourself makes you easy to like.",
         "The character can come back in ad after ad."
       ],
-      "beats": ["\"Meet [character]\"", "\"This is [character] before [product]\"", "Before line", "\"This is [character] after\"", "After line", "Call to action"],
+      "beats": [
+        "\"Meet [character]\"",
+        "\"This is [character] before [product]\"",
+        "Before line",
+        "\"This is [character] after\"",
+        "After line",
+        "Call to action"
+      ],
       "ideas": [
-        { "who": "Coaching or finance", "idea": "Before: empty wallet. After: needs a bigger wallet." },
-        { "who": "Fitness", "idea": "Out of breath on two stairs, then jogging up a stadium" },
-        { "who": "Language school", "idea": "A tourist who can't order coffee, then orders like a local" },
-        { "who": "Dating coach", "idea": "No dates, then a calendar with no gaps" }
+        {
+          "who": "Coaching or finance",
+          "idea": "Before: empty wallet. After: needs a bigger wallet."
+        },
+        {
+          "who": "Fitness",
+          "idea": "Out of breath on two stairs, then jogging up a stadium"
+        },
+        {
+          "who": "Language school",
+          "idea": "A tourist who can't order coffee, then orders like a local"
+        },
+        {
+          "who": "Dating coach",
+          "idea": "No dates, then a calendar with no gaps"
+        }
       ],
       "prompts": [
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Photo of [you, from your reference photo] dressed as a comic character named [name]: [costume: huge fake beard, bucket hat, aviator sunglasses], a name tag that reads \"HELLO MY NAME IS [NAME]\", standing in [setting], proud pose, vertical 9:16. Keep the same face as the reference." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. The character looks at the camera and says in a playful voice: \"Hello, my name is [name], and I had zero [leads].\" Short pause, then holds up [a phone buzzing with notifications] and says: \"Now I had to hire my cousin.\" 8 seconds, vertical." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 20-second before-and-after parody testimonial for [business] starring a silly recurring character named [name]. Make the character obviously fake and lovable. Two lines before, two lines after, then a call to action." }
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Photo of [you, from your reference photo] dressed as a comic character named [name]: [costume: huge fake beard, bucket hat, aviator sunglasses], a name tag that reads \"HELLO MY NAME IS [NAME]\", standing in [setting], proud pose, vertical 9:16. Keep the same face as the reference."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. The character looks at the camera and says in a playful voice: \"Hello, my name is [name], and I had zero [leads].\" Short pause, then holds up [a phone buzzing with notifications] and says: \"Now I had to hire my cousin.\" 8 seconds, vertical."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 20-second before-and-after parody testimonial for [business] starring a silly recurring character named [name]. Make the character obviously fake and lovable. Two lines before, two lines after, then a call to action."
+        }
       ],
       "brief": "Make a 20-second vertical The Obvious Actor video: me, in an obviously fake costume, as a happy customer before and after.\nBusiness: [your business]\nCharacter name: [name, or you decide]\nCostume: [costume, or you decide]\nMy photo for the face: [file]\nWhat changed, before and after: [before and after]\nCall to action: [offer]\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "Photo of a friendly middle-aged man dressed as an obviously fake comic character: an enormous fake bushy beard, a bright bucket hat, aviator sunglasses and a Hawaiian shirt, wearing a name tag that reads \"HELLO MY NAME IS GUSTAVO\". He stands proudly in front of a small shop, thumbs up, vertical 9:16, natural daylight, playful." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Photo of a friendly middle-aged man dressed as an obviously fake comic character: an enormous fake bushy beard, a bright bucket hat, aviator sunglasses and a Hawaiian shirt, wearing a name tag that reads \"HELLO MY NAME IS GUSTAVO\". He stands proudly in front of a small shop, thumbs up, vertical 9:16, natural daylight, playful."
+      },
+      "sample": "(THE CHARACTER, in a ridiculous costume, name tag: [CHARACTER NAME])\n\"Hello. My name is [character name]. I am a completely real customer.\"\n(CARD: \"[Character name], BEFORE [brand]\")\n\"I had [the before: zero leads / no energy / no dates]. I was [funny sad detail].\"\n(CARD: \"[Character name], AFTER [brand]\")\n\"Now I have [the after]. I had to [funny consequence of success].\"\n(THE CHARACTER, leaning in)\n\"Do I look like I'm lying? [Beat.] Don't answer that.\"\n(END CARD)\n\"[Offer]. [Call to action].\""
     },
     {
       "id": "jingle",
@@ -275,21 +610,59 @@
         "A catchy hook gets replayed and remembered.",
         "The lyrics carry the pain, the want and the call to action without a pitch."
       ],
-      "beats": ["Intro hook: \"Calling all [audience]\"", "Verse: the pain", "Pre-chorus: what they want", "Chorus: the result and \"link below\"", "Outro: call to action"],
+      "beats": [
+        "Intro hook: \"Calling all [audience]\"",
+        "Verse: the pain",
+        "Pre-chorus: what they want",
+        "Chorus: the result and \"link below\"",
+        "Outro: call to action"
+      ],
       "ideas": [
-        { "who": "Local service", "idea": "A jingle for a plumber, a dentist or a gym" },
-        { "who": "Online store", "idea": "A song about the product's main benefit" },
-        { "who": "Coaching", "idea": "A song about life before and after" },
-        { "who": "Restaurant", "idea": "A song about the signature dish" }
+        {
+          "who": "Local service",
+          "idea": "A jingle for a plumber, a dentist or a gym"
+        },
+        {
+          "who": "Online store",
+          "idea": "A song about the product's main benefit"
+        },
+        {
+          "who": "Coaching",
+          "idea": "A song about life before and after"
+        },
+        {
+          "who": "Restaurant",
+          "idea": "A song about the signature dish"
+        }
       ],
       "prompts": [
-        { "label": "Song", "tool": "ElevenLabs Music", "text": "Upbeat pop song, about 45 seconds, for [business] that helps [audience]. Verse: their pain ([pain 1], [pain 2]). Pre-chorus: what they want ([desire]). Chorus: the result ([result]) and the words \"link below\". Simple, catchy words, [female / male] lead vocal, bright synths and handclaps." },
-        { "label": "Still image", "tool": "Nano Banana 2.1", "text": "Pixar-style 3D cartoon of [you: hair, outfit] singing into a microphone, holding a sign that reads \"[CALLING ALL BUSINESS OWNERS]\", on [a rooftop stage at sunset with a dancing crowd], bright colors, vertical 9:16." },
-        { "label": "Motion (from the still)", "tool": "Kling image-to-video", "text": "Animate this image. The character dances and sings on the beat, the crowd cheers, the camera bounces gently with the rhythm, confetti at the end. 8 seconds." },
-        { "label": "Scenes for the song", "tool": "Agent", "text": "Here are my song lyrics: [paste lyrics]. Split them into 10 short scenes for a vertical music video. For each scene give the lyric line, a Nano Banana image prompt, and a short motion prompt. Keep the same cartoon lead singer in every scene." }
+        {
+          "label": "Song",
+          "tool": "ElevenLabs Music",
+          "text": "Upbeat pop song, about 45 seconds, for [business] that helps [audience]. Verse: their pain ([pain 1], [pain 2]). Pre-chorus: what they want ([desire]). Chorus: the result ([result]) and the words \"link below\". Simple, catchy words, [female / male] lead vocal, bright synths and handclaps."
+        },
+        {
+          "label": "Still image",
+          "tool": "Nano Banana 2.1",
+          "text": "Pixar-style 3D cartoon of [you: hair, outfit] singing into a microphone, holding a sign that reads \"[CALLING ALL BUSINESS OWNERS]\", on [a rooftop stage at sunset with a dancing crowd], bright colors, vertical 9:16."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Kling image-to-video",
+          "text": "Animate this image. The character dances and sings on the beat, the crowd cheers, the camera bounces gently with the rhythm, confetti at the end. 8 seconds."
+        },
+        {
+          "label": "Scenes for the song",
+          "tool": "Agent",
+          "text": "Here are my song lyrics: [paste lyrics]. Split them into 10 short scenes for a vertical music video. For each scene give the lyric line, a Nano Banana image prompt, and a short motion prompt. Keep the same cartoon lead singer in every scene."
+        }
       ],
       "brief": "Make a 45-second vertical The Jingle video: an ElevenLabs Music song about my customer's problem, sung by a cartoon version of me.\nBusiness: [your business]\nAudience: [who it is for]\nTheir pain: [pain points]\nWhat they want: [desire]\nThe result: [result]\nSinger: [female / male / you decide]\nMy photo for the cartoon: [file]\nShow me the lyrics first, then the song, then the stills, before making video.",
-      "example": { "aspect": "9:16", "prompt": "Pixar-style 3D cartoon of a cheerful woman with curly red hair in a yellow jacket singing into a vintage microphone on a rooftop stage at sunset, holding up a sign that reads \"CALLING ALL BUSINESS OWNERS\", a crowd of cartoon people dancing below, confetti in the air, bright saturated colors, vertical 9:16." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Pixar-style 3D cartoon of a cheerful woman with curly red hair in a yellow jacket singing into a vintage microphone on a rooftop stage at sunset, holding up a sign that reads \"CALLING ALL BUSINESS OWNERS\", a crowd of cartoon people dancing below, confetti in the air, bright saturated colors, vertical 9:16."
+      },
+      "sample": "(INTRO, cartoon you at the mic)\n\"Calling all [audience]! Yeah, you!\"\n(VERSE: the pain)\n\"Tired of [pain 1], [pain 2] every day,\n(pain 3) getting in your way.\"\n(PRE-CHORUS: what they want)\n\"You just want [desire], you want it fast,\nyou want [desire 2] that's built to last.\"\n(CHORUS: the result)\n\"[Business]! [Result in four words]!\n(Business)! [Result, said another way]!\nLink below, don't wait, don't stall,\n(short rhyme with the call to action)!\"\n(OUTRO)\n\"[Offer]. Link below.\""
     },
     {
       "id": "clone-anywhere",
@@ -307,21 +680,59 @@
         "You never film, set up lights or learn lines.",
         "The odd background detail keeps people watching to figure it out."
       ],
-      "beats": ["Clone in a surprising place or style", "Hook line to camera", "The main point", "One proof", "Call to action"],
+      "beats": [
+        "Clone in a surprising place or style",
+        "Hook line to camera",
+        "The main point",
+        "One proof",
+        "Call to action"
+      ],
       "ideas": [
-        { "who": "Contractor", "idea": "Clone talking while the room is painted around them" },
-        { "who": "Coach", "idea": "Clone walking through a sunflower field" },
-        { "who": "Realtor", "idea": "Clone touring the listing as a 3D cartoon" },
-        { "who": "Any brand", "idea": "Clone with a person in a hot dog costume behind them" }
+        {
+          "who": "Contractor",
+          "idea": "Clone talking while the room is painted around them"
+        },
+        {
+          "who": "Coach",
+          "idea": "Clone walking through a sunflower field"
+        },
+        {
+          "who": "Realtor",
+          "idea": "Clone touring the listing as a 3D cartoon"
+        },
+        {
+          "who": "Any brand",
+          "idea": "Clone with a person in a hot dog costume behind them"
+        }
       ],
       "prompts": [
-        { "label": "Still image (new place)", "tool": "Nano Banana 2.1", "text": "Photorealistic photo of [you, from your reference photo] talking to camera in [a surprising place: a bowling alley]. In the background, [a man in a full hot dog costume] stands perfectly still and stares at the camera. Natural light, vertical 9:16. Keep the same face as the reference." },
-        { "label": "Still image (new style)", "tool": "Nano Banana 2.1", "text": "Redraw this photo of me as a [paper cutout / retro video game / comic book / claymation] character. Keep the same hair, face and outfit. Place me in [setting]." },
-        { "label": "Motion (from the still)", "tool": "Veo 3.1 image-to-video", "text": "Use this image as the first frame. I talk to camera with natural lip sync: \"[script line]\". Small hand gestures. The [hot dog man] slowly waves in the background. 8 seconds." },
-        { "label": "Script", "tool": "Agent", "text": "Write a 30-second talking-head ad for [business]. A hook in the first 3 seconds, one main point, one proof, one call to action. Also give me 5 surprising places or background characters that would stop the scroll." }
+        {
+          "label": "Still image (new place)",
+          "tool": "Nano Banana 2.1",
+          "text": "Photorealistic photo of [you, from your reference photo] talking to camera in [a surprising place: a bowling alley]. In the background, [a man in a full hot dog costume] stands perfectly still and stares at the camera. Natural light, vertical 9:16. Keep the same face as the reference."
+        },
+        {
+          "label": "Still image (new style)",
+          "tool": "Nano Banana 2.1",
+          "text": "Redraw this photo of me as a [paper cutout / retro video game / comic book / claymation] character. Keep the same hair, face and outfit. Place me in [setting]."
+        },
+        {
+          "label": "Motion (from the still)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this image as the first frame. I talk to camera with natural lip sync: \"[script line]\". Small hand gestures. The [hot dog man] slowly waves in the background. 8 seconds."
+        },
+        {
+          "label": "Script",
+          "tool": "Agent",
+          "text": "Write a 30-second talking-head ad for [business]. A hook in the first 3 seconds, one main point, one proof, one call to action. Also give me 5 surprising places or background characters that would stop the scroll."
+        }
       ],
       "brief": "Make a 30-second vertical Clone Anywhere video: me talking to camera somewhere unexpected, or in a new art style, with one odd thing in the background.\nBusiness: [your business]\nMy photo: [file]\nPlace or style: [place or style, or you decide]\nOdd background detail: [detail, or you decide]\nScript: [paste your script, or say: write it for me]\nVoice: my cloned voice.\nMake the stills with Nano Banana 2.1 first and show me the script and stills before making video.",
-      "example": { "aspect": "9:16", "prompt": "Photorealistic photo of a confident woman in her thirties with a dark bob haircut and a mustard blazer, talking to camera in a retro bowling alley with neon lights. In the background, a man in a full hot dog costume stands perfectly still beside a ball return and stares at the camera. Natural light, shallow depth of field, vertical 9:16. No text." }
+      "example": {
+        "aspect": "9:16",
+        "prompt": "Photorealistic photo of a confident woman in her thirties with a dark bob haircut and a mustard blazer, talking to camera in a retro bowling alley with neon lights. In the background, a man in a full hot dog costume stands perfectly still beside a ball return and stares at the camera. Natural light, shallow depth of field, vertical 9:16. No text."
+      },
+      "sample": "(YOUR CLONE in [surprising place], talking straight to camera. In the background: [odd detail], never mentioned)\n\"[Hook in under 3 seconds: a question or a bold claim about the problem].\"\n\"Here's the thing most [audience] get wrong: [the mistake].\"\n\"[Your main point, in one or two lines].\"\n\"[One proof: a number, a result, a short story].\"\n(THE ODD DETAIL does one small thing: waves, sips coffee, bowls a strike)\n\"[Call to action]. And no, I don't know who that is either.\""
     },
     {
       "id": "spokes-character",
@@ -339,21 +750,59 @@
         "The same face in every ad builds recognition.",
         "A mascot lets a small business be as memorable as a big one."
       ],
-      "beats": ["Pick the target viewer", "Design the spokesperson or mascot", "Lock a character sheet", "Write the hook and message", "Make many short videos with the same face"],
+      "beats": [
+        "Pick the target viewer",
+        "Design the spokesperson or mascot",
+        "Lock a character sheet",
+        "Write the hook and message",
+        "Make many short videos with the same face"
+      ],
       "ideas": [
-        { "who": "Solar or home services", "idea": "A friendly local spokeswoman" },
-        { "who": "Insurance", "idea": "An animal mascot with a signature accessory" },
-        { "who": "Retirement", "idea": "A calm, trusted older spokesman" },
-        { "who": "Beauty", "idea": "A spokesperson who matches the buyer's age and look" }
+        {
+          "who": "Solar or home services",
+          "idea": "A friendly local spokeswoman"
+        },
+        {
+          "who": "Insurance",
+          "idea": "An animal mascot with a signature accessory"
+        },
+        {
+          "who": "Retirement",
+          "idea": "A calm, trusted older spokesman"
+        },
+        {
+          "who": "Beauty",
+          "idea": "A spokesperson who matches the buyer's age and look"
+        }
       ],
       "prompts": [
-        { "label": "Character sheet", "tool": "Nano Banana 2.1", "text": "Character sheet of an AI spokesperson for [business]: a [age] [gender] with [hair, skin tone, style], a warm trustworthy smile, [outfit]. Front view, three-quarter view, side view, and 4 expressions (happy, surprised, serious, laughing). Plain light-grey background, photorealistic." },
-        { "label": "Mascot", "tool": "Nano Banana 2.1", "text": "Brand mascot for [business]: a friendly [animal or object] with a signature [color, accessory], Pixar-style 3D, full body, front and three-quarter views, plain background." },
-        { "label": "Motion (from the sheet)", "tool": "Veo 3.1 image-to-video", "text": "Use the front view as the first frame. The spokesperson stands in front of [a home with solar panels] and says warmly to camera: \"[Here's what your neighbors found out about [offer].]\" Natural lip sync, light breeze, 8 seconds." },
-        { "label": "Scripts", "tool": "Agent", "text": "Write 5 different 20-second scripts for [business] spoken by the same spokesperson, [name]. Each uses a different hook: a question, a bold claim, a story, a mistake, and the offer." }
+        {
+          "label": "Character sheet",
+          "tool": "Nano Banana 2.1",
+          "text": "Character sheet of an AI spokesperson for [business]: a [age] [gender] with [hair, skin tone, style], a warm trustworthy smile, [outfit]. Front view, three-quarter view, side view, and 4 expressions (happy, surprised, serious, laughing). Plain light-grey background, photorealistic."
+        },
+        {
+          "label": "Mascot",
+          "tool": "Nano Banana 2.1",
+          "text": "Brand mascot for [business]: a friendly [animal or object] with a signature [color, accessory], Pixar-style 3D, full body, front and three-quarter views, plain background."
+        },
+        {
+          "label": "Motion (from the sheet)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use the front view as the first frame. The spokesperson stands in front of [a home with solar panels] and says warmly to camera: \"[Here's what your neighbors found out about [offer].]\" Natural lip sync, light breeze, 8 seconds."
+        },
+        {
+          "label": "Scripts",
+          "tool": "Agent",
+          "text": "Write 5 different 20-second scripts for [business] spoken by the same spokesperson, [name]. Each uses a different hook: a question, a bold claim, a story, a mistake, and the offer."
+        }
       ],
       "brief": "Make a Spokes-Character for my business and a first set of short vertical videos with it.\nBusiness: [your business]\nWho buys: [your buyer]\nSpokesperson or mascot: [spokesperson / mascot / both]\nLook: [description, or you decide]\nHow many videos: [3 / 5]\nOffer and call to action: [offer]\nMake and lock the character sheet with Nano Banana 2.1 first and show it to me before making video.",
-      "example": { "aspect": "16:9", "prompt": "Character sheet of a brand mascot for a home insurance company: a friendly round orange owl wearing a tiny blue hard hat and a reflective safety vest, Pixar-style 3D. Full body front view, three-quarter view, side view, and four facial expressions (happy, surprised, serious, laughing) in a row. Plain light-grey background, clean studio light, 16:9. No text." }
+      "example": {
+        "aspect": "16:9",
+        "prompt": "Character sheet of a brand mascot for a home insurance company: a friendly round orange owl wearing a tiny blue hard hat and a reflective safety vest, Pixar-style 3D. Full body front view, three-quarter view, side view, and four facial expressions (happy, surprised, serious, laughing) in a row. Plain light-grey background, clean studio light, 16:9. No text."
+      },
+      "sample": "(SPOKES-CHARACTER: [name], the face of [business], in [setting])\n\"Hi, I'm [name] from [business].\"\n(HOOK, pick one: a question / a bold claim / a short story / a common mistake / the offer)\n\"[Hook line].\"\n\"[One sentence about the problem your customer has].\"\n\"[One sentence about how the business fixes it].\"\n\"[One proof: a number, a neighbor, a result].\"\n\"[Offer]. [Call to action]. See you next time.\""
     },
     {
       "id": "sky-tour",
@@ -371,22 +820,64 @@
         "Moving shots get far more attention than still photos.",
         "It is quick to make again for every new listing."
       ],
-      "beats": ["Hero aerial with size and location", "Living space", "Kitchen or dining", "Main bedroom or bath, with the bed and bath count", "The view or the neighborhood", "Agent name and call to action"],
+      "beats": [
+        "Hero aerial with size and location",
+        "Living space",
+        "Kitchen or dining",
+        "Main bedroom or bath, with the bed and bath count",
+        "The view or the neighborhood",
+        "Agent name and call to action"
+      ],
       "ideas": [
-        { "who": "Realtor", "idea": "Listing tours" },
-        { "who": "Vacation rental", "idea": "The house and the beach down the road" },
-        { "who": "Hotel or venue", "idea": "Rooms, event spaces and grounds" },
-        { "who": "Events", "idea": "The venue and the experience" },
-        { "who": "Travel", "idea": "Destination fly-throughs" }
+        {
+          "who": "Realtor",
+          "idea": "Listing tours"
+        },
+        {
+          "who": "Vacation rental",
+          "idea": "The house and the beach down the road"
+        },
+        {
+          "who": "Hotel or venue",
+          "idea": "Rooms, event spaces and grounds"
+        },
+        {
+          "who": "Events",
+          "idea": "The venue and the experience"
+        },
+        {
+          "who": "Travel",
+          "idea": "Destination fly-throughs"
+        }
       ],
       "prompts": [
-        { "label": "Motion (from a listing photo)", "tool": "Veo 3.1 image-to-video", "text": "Use this listing photo as the first frame. Slow cinematic drone pull-back that reveals [the house, the pool and the hills]. Golden hour, smooth stabilized motion, no people, do not add or change any buildings or features. 8 seconds." },
-        { "label": "Motion (inside)", "tool": "Kling image-to-video", "text": "Use this interior photo. Slow gimbal push-in through [the living room toward the big windows], soft daylight, realistic, keep every piece of furniture and finish exactly as shown. 6 seconds." },
-        { "label": "On-screen text", "tool": "FilmCraft", "text": "[4,200 sq ft] / [Scottsdale, AZ] / [5 bed · 4 bath] / [Agent name] · [Book a showing]" },
-        { "label": "Shot list", "tool": "Agent", "text": "I am listing [property: size, location, features]. Give me a 30-second vertical video shot list of 6 shots, each with: which photo to use, the camera move, the on-screen text, and the length." }
+        {
+          "label": "Motion (from a listing photo)",
+          "tool": "Veo 3.1 image-to-video",
+          "text": "Use this listing photo as the first frame. Slow cinematic drone pull-back that reveals [the house, the pool and the hills]. Golden hour, smooth stabilized motion, no people, do not add or change any buildings or features. 8 seconds."
+        },
+        {
+          "label": "Motion (inside)",
+          "tool": "Kling image-to-video",
+          "text": "Use this interior photo. Slow gimbal push-in through [the living room toward the big windows], soft daylight, realistic, keep every piece of furniture and finish exactly as shown. 6 seconds."
+        },
+        {
+          "label": "On-screen text",
+          "tool": "FilmCraft",
+          "text": "[4,200 sq ft] / [Scottsdale, AZ] / [5 bed · 4 bath] / [Agent name] · [Book a showing]"
+        },
+        {
+          "label": "Shot list",
+          "tool": "Agent",
+          "text": "I am listing [property: size, location, features]. Give me a 30-second vertical video shot list of 6 shots, each with: which photo to use, the camera move, the on-screen text, and the length."
+        }
       ],
       "brief": "Make a 30-second Sky Tour video of a property from its photos: slow aerial and walk-through moves, facts on screen, music only.\nProperty photos: [file, several]\nSize: [square feet]\nLocation: [city]\nBedrooms and baths: [for example 5 bed, 4 bath]\nAgent name and call to action: [name and call to action]\nShape: [9:16 / 16:9 / both]\nNever add or change anything about the property in the video.",
-      "example": { "aspect": "16:9", "prompt": "Cinematic aerial drone photo at golden hour of a modern single-story desert home with a turquoise pool, white stucco walls, large glass windows and palm trees, saguaro cacti and rocky hills in the background, warm sunset light, wide shot from above and behind, photorealistic real estate photography, 16:9. No text, no people." }
+      "example": {
+        "aspect": "16:9",
+        "prompt": "Cinematic aerial drone photo at golden hour of a modern single-story desert home with a turquoise pool, white stucco walls, large glass windows and palm trees, saguaro cacti and rocky hills in the background, warm sunset light, wide shot from above and behind, photorealistic real estate photography, 16:9. No text, no people."
+      },
+      "sample": "(SHOT 1, aerial pull-back from [hero photo])  TEXT: [size] · [city]\n(SHOT 2, push-in through [living space photo])  TEXT: [headline feature]\n(SHOT 3, slow pan across [kitchen or dining photo])  TEXT: [second feature]\n(SHOT 4, glide into [main bedroom or bath photo])  TEXT: [beds] bed · [baths] bath\n(SHOT 5, rise over [view or neighborhood photo])  TEXT: [lifestyle line: 5 minutes to the beach]\n(SHOT 6, end card)  TEXT: [agent name] · [brokerage] · [call to action]\nMUSIC: [mood: warm acoustic / cinematic / upbeat], no voiceover."
     }
   ]
 }

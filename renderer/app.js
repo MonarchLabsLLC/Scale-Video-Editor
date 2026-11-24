@@ -194,12 +194,13 @@ function render() {
   else if (v === 'setup') main.append(viewSetup());
   else if (v === 'brands') main.append(viewBrands());
   else if (v === 'brand') main.append(viewBrand(state.route.id));
+  else if (v === 'knowledge-doc') main.append(viewKnowledgeDoc(state.route.id));
   else main.append(viewHome());
 }
 
 /* ---------- sidebar ---------- */
 function renderSidebar() {
-  document.querySelectorAll('.nav-item[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === (state.route.view === 'brand' ? 'brands' : state.route.view)));
+  document.querySelectorAll('.nav-item[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === (['brand', 'knowledge-doc'].includes(state.route.view) ? 'brands' : state.route.view)));
   const list = $('#projectList');
   list.innerHTML = '';
   if (!state.projects.length) list.append(h('div', { class: 'side-empty' }, 'No projects yet.'));
@@ -485,6 +486,7 @@ function viewHome() {
   const picker = agentPicker({ value: chosen, onChange: async id => { chosen = id; state.env.settings = await api.setSettings({ engine: id }); render(); } });
   const brand = homeBrand();
   const bpick = brandPicker({ value: brand, onChange: uid => { state.homeBrand = uid; render(); } });
+  const kpick = knowledgePicker({ value: homeKnowledge(), onChange: uids => { state.homeKnowledge = uids; render(); } });
   const page = h('div', { class: 'page' },
     h('div', { class: 'topdrag' }),
     setupBanner(),
@@ -492,9 +494,9 @@ function viewHome() {
     h('h1', { class: 'hero', html: 'Any video you can <em>describe.</em>' }),
     h('p', { class: 'lede' }, 'Say what you want to make. Your agent picks the tools and builds it while you watch, and FilmCraft holds the timeline.'),
     composer({
-      key: 'home', big: true, footLeft: [picker, modelPicker({ engine: chosen }), voicePicker({ value: state.env?.settings?.voice || '', onChange: async v => { state.env.settings = await api.setSettings({ voice: v }); } }), bpick],
+      key: 'home', big: true, footLeft: [picker, modelPicker({ engine: chosen }), voicePicker({ value: state.env?.settings?.voice || '', onChange: async v => { state.env.settings = await api.setSettings({ voice: v }); } }), bpick, kpick],
       placeholder: 'Describe your video, or pick a kind of video below. Drop footage, a script or a screenshot here.',
-      onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, brand, prompt: text, attachments: files })
+      onSubmit: (text, files) => startProject({ name: nameFrom(text), engine: chosen, brand, knowledge: homeKnowledge(), prompt: text, attachments: files })
     }),
     recentSection(),
     categoryTiles(),
@@ -545,7 +547,7 @@ function formatCard(f) {
         h('button', { class: 'copy-btn', onclick: () => copyText(f.ask) }, 'Copy')),
       h('q', null, f.ask)),
     h('div', { class: 'factions' },
-      h('button', { class: 'btn small', title: 'Start a project with this sentence', onclick: () => startProject({ name: f.name, engine: state.env?.settings?.engine || 'claude', brand: homeBrand(), format: f.id, prompt: f.ask }) }, 'Use this sentence'),
+      h('button', { class: 'btn small', title: 'Start a project with this sentence', onclick: () => startProject({ name: f.name, engine: state.env?.settings?.engine || 'claude', brand: homeBrand(), knowledge: homeKnowledge(), format: f.id, prompt: f.ask }) }, 'Use this sentence'),
       h('button', { class: 'btn small primary', onclick: () => openInterview(f) }, 'Answer the questions →')),
     h('div', { class: 'fchat' }, h('button', { class: 'chat-link', onclick: () => openGuide(guideDraftFor(f), f.name) }, '? Chat about this video')));
 }
@@ -591,12 +593,24 @@ function viralBrief(f) {
     `How the ${f.name} format works: ${unbracket(f.tag)}`,
     ...f.steps.map(x => '- ' + unbracket(x)),
     'Beats: ' + f.beats.map(unbracket).join(' -> '),
+    'Sample script (a Mad Lib: keep its beats, rhythm, line lengths and the shape of each joke; fill every <placeholder> and swap every example detail for my business, my customer, my problem and my offer):',
+    unbracket(f.sample),
+    '',
     'Prompts to start from (fill the <placeholders> from my answers):',
     ...f.prompts.map(p => `- ${p.label} (${p.tool}): ${unbracket(p.text)}`),
     '',
     'Tools: make stills with GenMedia google/nano-banana-2.1 and reuse each character image so the look stays the same. Animate with fal-ai/veo3.1/image-to-video (talking, lip sync) or kling/v4/image-to-video. Songs with elevenlabs/music/v2.5. Voiceover with my-voice. Cut, caption and export in FilmCraft. Burn in captions and end on the call to action.',
     'Before generating video clips, show me the script and the stills, say roughly what the video clips will cost, and wait for my go-ahead.'
   ].join('\n');
+}
+
+// The sample script with its [blanks] marked, so the Mad Lib is easy to see.
+function madlib(text) {
+  const out = [];
+  let last = 0;
+  String(text).replace(/\[[^\]]+\]/g, (m, i) => { out.push(text.slice(last, i), h('mark', { class: 'blank' }, m.slice(1, -1))); last = i + m.length; return m; });
+  out.push(text.slice(last));
+  return out;
 }
 
 function makeViral(f) {
@@ -653,6 +667,10 @@ function viewViralFormat(id) {
     h('div', { class: 'vbox' }, h('h3', null, 'Ideas for your niche'),
       h('table', { class: 'vniche' }, h('tbody', null, f.ideas.map(n => h('tr', null, h('td', null, n.who), h('td', null, n.idea)))))),
     h('section', null,
+      sectionHead('Sample script', 'Fill in the blanks.', 'A Mad Lib for this format. Make this video hands it to the agent, which keeps the beats and the jokes and swaps in your business, your customer and your offer, using your brand knowledge documents if you attach them.',
+        h('button', { class: 'btn small', onclick: () => copyText(f.sample) }, 'Copy script')),
+      h('pre', { class: 'vsample' }, madlib(f.sample))),
+    h('section', null,
       sectionHead('Prompts', 'Image first, then motion.', 'Text in [brackets] is yours to fill in. Make this video fills them from your answers, or copy one and use it anywhere.'),
       h('div', { class: 'vprompts' }, f.prompts.map(prompt))));
 }
@@ -707,7 +725,7 @@ function openInterview(f) {
     if (miss.length) { toast(`Please fill in: ${miss.map(m => m.label).join(', ')}`); return; }
     const prompt = window.SVEBrief.fill(f.brief, qs, answers);
     close();
-    startProject({ name: f.name, engine, brand, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
+    startProject({ name: f.name, engine, brand, knowledge: kn, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
   };
   let picker, mpick;
   const onPick = id => {
@@ -720,13 +738,16 @@ function openInterview(f) {
   let bpick;
   const onBrand = uid => { brand = uid; const next = brandPicker({ value: uid, onChange: onBrand }); bpick.replaceWith(next); bpick = next; };
   bpick = brandPicker({ value: brand, onChange: onBrand });
+  let kn = homeKnowledge(), kpick;
+  const onKn = uids => { kn = uids; state.homeKnowledge = uids; const next = knowledgePicker({ value: uids, onChange: onKn }); kpick.replaceWith(next); kpick = next; };
+  kpick = knowledgePicker({ value: kn, onChange: onKn });
   const sheet = h('div', { class: 'sheet', role: 'dialog' },
     h('div', { class: 'sheet-top' },
       f.img ? h('div', { class: 'frame' }, h('img', { src: f.img, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } })) : h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
       h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,
-    h('div', { class: 'sheet-foot' }, picker, mpick, bpick, h('span', { class: 'grow' }),
+    h('div', { class: 'sheet-foot' }, picker, mpick, bpick, kpick, h('span', { class: 'grow' }),
       h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
       h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →')));
   overlay.innerHTML = '';
@@ -744,9 +765,9 @@ async function newBlankProject() {
   go({ view: 'project', id: p.id });
 }
 
-async function startProject({ name, engine, format, brand, prompt, attachments }) {
+async function startProject({ name, engine, format, brand, knowledge, prompt, attachments }) {
   if (!agentInfo(engine).installed) { go({ view: 'settings' }); toast(`${agentInfo(engine).name} is not installed yet.`); return; }
-  const p = await api.projects.create({ name, engine, format, brand: brand || null });
+  const p = await api.projects.create({ name, engine, format, brand: brand || null, knowledge: knowledge || [] });
   await refreshProjects();
   go({ view: 'project', id: p.id });
   await sendTurn(p.id, prompt, attachments || []);
@@ -841,6 +862,16 @@ function viewProject(id) {
       render();
     }
   });
+  const kpick = knowledgePicker({
+    value: project.knowledge || [], onChange: async uids => {
+      const before = (project.knowledge || []).filter(knowledgeByUid).sort().join();
+      if (uids.slice().sort().join() === before) return;
+      await api.projects.update(id, { knowledge: uids });
+      await refreshProjects();
+      toast(uids.length ? `From the next message, the agent reads ${uids.length === 1 ? `“${knowledgeByUid(uids[0])?.name}”` : `${uids.length} knowledge documents`}.` : 'From the next message, no brand knowledge is attached.');
+      render();
+    }
+  });
   const left = h('section', { class: 'ws-left' },
     h('div', { class: 'ws-head' },
       h('button', { class: 'crumb', onclick: () => go({ view: 'home' }) }, 'Home /'), title, h('span', { class: 'grow' }),
@@ -856,7 +887,7 @@ function viewProject(id) {
       placeholder: busy ? 'The agent is working…' : 'Ask for a change, or say what to make next.',
       onSubmit: (text, files) => sendTurn(id, text, files),
       onStop: () => api.agent.stop(id),
-      footLeft: [picker, modelPicker({ engine: project.engine }), voicePicker({ value: project.voice != null ? project.voice : (state.env?.settings?.voice || ''), onChange: async v => { await api.projects.update(id, { voice: v }); await refreshProjects(); toast('From the next message, the agent uses this voice.'); } }), bpick]
+      footLeft: [picker, modelPicker({ engine: project.engine }), voicePicker({ value: project.voice != null ? project.voice : (state.env?.settings?.voice || ''), onChange: async v => { await api.projects.update(id, { voice: v }); await refreshProjects(); toast('From the next message, the agent uses this voice.'); } }), bpick, kpick]
     })));
   const right = h('section', { class: 'ws-right', id: 'preview' });
   const ws = h('div', { class: 'ws' }, left, right);
