@@ -179,6 +179,10 @@ async function takeSnapshots() {
   await js("document.querySelector('.knowledge-pick .mini-select')?.click()"); await wait(300); await shot('8c-knowledge-picker');
   await js("document.body.click(); window.__sve.go({ view: 'viral', id: 'problem-speaks' })"); await wait(500);
   await js("document.querySelector('.vsample')?.scrollIntoView({ block: 'center' })"); await wait(300); await shot('8d-viral-sample');
+  await js("window.__sve.state.homeKnowledge = window.__sve.state.knowledge.map(k => k.uid); window.__sve.go({ view: 'viral', id: 'bobblehead' })"); await wait(500);
+  await js("[...document.querySelectorAll('button')].find(b => b.textContent === 'Make this video').click()"); await wait(500); await shot('8e-interview-knowledge');
+  await js("document.querySelectorAll('.sheet *').forEach(e => { if (e.scrollHeight > e.clientHeight + 50) e.scrollTop = e.scrollHeight; }); document.querySelector('.sheet').scrollTop = 99999"); await wait(300); await shot('8f-interview-references');
+  await js("document.querySelector('.sheet-close')?.click(); window.__sve.state.homeKnowledge = []");
   // Brand Guides. SVE_SNAPSHOT_BRANDS="site.com,https://link/DESIGN.md" adds those first (needs the network).
   for (const link of (process.env.SVE_SNAPSHOT_BRANDS || '').split(',').filter(Boolean)) {
     try { await importBrandUrl(link); } catch (err) { console.error('brand', link, err.message); }

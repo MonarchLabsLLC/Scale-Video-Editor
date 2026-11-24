@@ -680,3 +680,18 @@ input.krename { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; widt
 @media (max-width: 720px) { .vm-cards { grid-template-columns: 1fr; } }
 .sheet-foot { flex-wrap: wrap; row-gap: 8px; }
 .sheet-foot .mini-select { white-space: nowrap; }
+
+/* Start sheet: your business, reference files, steering */
+.brand-box { background: var(--soft); border: 1px solid var(--hair); border-radius: 16px; padding: 14px 16px; }
+.brand-box .row-gap { display: flex; gap: 8px; flex-wrap: wrap; }
+.brand-box .mini-select { background: var(--panel); border: 1px solid var(--hair); }
+.brand-box .fh { margin: 8px 0 0; }
+.q .opt-tag { color: var(--label); font-weight: 500; font-size: 12px; margin-left: 6px; }
+.q .fh { margin: -2px 0 8px; font-size: 13px; color: var(--label); }
+.q textarea.short { min-height: 72px; }
+.asset-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.asset-list:empty { display: none; }
+.asset-row { display: grid; grid-template-columns: minmax(0, 180px) 1fr auto; gap: 8px; align-items: center; }
+.asset-row .fname { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asset-x { width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--hair); background: var(--panel); }
+.sheet-foot .foot-go { margin-left: auto; display: flex; gap: 10px; }

@@ -20,3 +20,12 @@ test('the agent prompt names the chosen model and asks before clips', () => {
   assert.match(p, /wait for their go-ahead/);
   assert.match(agents.systemPrompt({ projectDir: '/p' }), /the person chose Best, Seedance 2\.5/);
 });
+
+test('without brand knowledge the agent asks about the business; references are used', () => {
+  const none = agents.systemPrompt({ projectDir: '/p' });
+  assert.match(none, /No brand knowledge is attached/);
+  assert.match(none, /Reference photos and files/);
+  const withK = agents.systemPrompt({ projectDir: '/p', knowledge: [{ file: 'knowledge/a.md', name: 'A' }] });
+  assert.doesNotMatch(withK, /No brand knowledge is attached/);
+  assert.match(withK, /Brand knowledge: the person attached/);
+});

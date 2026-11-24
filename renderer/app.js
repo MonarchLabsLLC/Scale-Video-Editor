@@ -733,13 +733,68 @@ function openInterview(f) {
   const answers = {};
   let engine = state.env?.settings?.engine || 'claude';
   let brand = homeBrand();
+  let kn = homeKnowledge();
+  let vm = homeVideoModel();
+  const assets = []; // [{ path, note }] reference photos and files, each with what it is for
+  let steer = '';
   const overlay = $('#overlay');
   const preview = h('pre');
-  const update = () => { preview.textContent = window.SVEBrief.fill(f.brief, qs, answers); };
+
+  // With brand knowledge attached, a blank question means "take it from my documents",
+  // and the script can be left for the agent to write.
+  const filled = () => {
+    const a = { ...answers };
+    if (kn.length) for (const q of qs) if ((q.type === 'short' || q.type === 'long') && !String(a[q.id] || '').trim()) a[q.id] = q.type === 'long' ? 'write it for me from my brand knowledge' : 'take it from my brand knowledge, or you choose';
+    return a;
+  };
+  const buildPrompt = () => {
+    const out = [window.SVEBrief.fill(f.brief, qs, filled())];
+    const named = assets.filter(x => x.path);
+    if (named.length) out.push('', 'Reference photos and files I added. Use each one as its note says. For a person, an outfit, a product or a place, give the image to the image model as a reference (an edit or reference-image model) so it looks the same in every still. Do not move or delete them:',
+      ...named.map(x => `- ${x.path}${x.note.trim() ? ` (${x.note.trim()})` : ' (no note: ask me what it is for if it is not clear)'}`));
+    if (steer.trim()) out.push('', `How I want it steered: ${steer.trim()}`);
+    return out.join('\n');
+  };
+  const update = () => { preview.textContent = buildPrompt(); };
+  const needed = q => (q.type === 'long' && !kn.length) || q.type === 'file';
+
+  // Pickers. Brand and knowledge sit at the top of the form; the footer keeps agent, model and video model.
+  let picker, mpick, bpick, kpick, vpick;
+  const onPick = id => {
+    engine = id;
+    const next = agentPicker({ value: id, onChange: onPick }); picker.replaceWith(next); picker = next;
+    const nm = modelPicker({ engine: id }); mpick.replaceWith(nm); mpick = nm;
+  };
+  picker = agentPicker({ value: engine, onChange: onPick });
+  mpick = modelPicker({ engine });
+  const onBrand = uid => { brand = uid; const next = brandPicker({ value: uid, onChange: onBrand, up: false }); bpick.replaceWith(next); bpick = next; };
+  bpick = brandPicker({ value: brand, onChange: onBrand, up: false });
+  const reqTags = [];
+  const brandNote = h('p', { class: 'fh' });
+  const drawBrandNote = () => {
+    brandNote.textContent = kn.length
+      ? 'The agent reads your brand knowledge for your business, customers, offers, proof and voice. Leave any question below blank to use it, or type to steer.'
+      : 'Attach your brand knowledge (your BrandBaser documents) so the agent knows your business. Without it, fill in the questions below.';
+    for (const t of reqTags) {
+      t.el.style.display = needed(t.q) ? '' : 'none';
+      if (t.input && t.hint) t.input.placeholder = kn.length ? `Blank: from your brand knowledge. Or type: ${t.hint}` : t.hint;
+    }
+  };
+  const onKn = uids => { kn = uids; state.homeKnowledge = uids; const next = knowledgePicker({ value: uids, onChange: onKn, up: false }); kpick.replaceWith(next); kpick = next; drawBrandNote(); update(); };
+  kpick = knowledgePicker({ value: kn, onChange: onKn, up: false });
+  const onVm = id => { vm = id; state.homeVideoModel = id; const next = videoModelPicker({ value: id, onChange: onVm }); vpick.replaceWith(next); vpick = next; };
+  vpick = videoModelPicker({ value: vm, onChange: onVm });
+
   const body = h('div', { class: 'sheet-body' });
+  body.append(h('div', { class: 'q brand-box' },
+    h('label', { class: 'ql' }, 'Your business'),
+    h('div', { class: 'row-gap' }, kpick, bpick),
+    brandNote));
+
   for (const q of qs) {
-    const required = q.type === 'long' || q.type === 'file';
-    const label = h('label', { class: 'ql' }, q.label, required ? h('span', { class: 'req' }, 'needed') : null);
+    const req = h('span', { class: 'req' }, 'needed');
+    reqTags.push({ q, el: req });
+    const label = h('label', { class: 'ql' }, q.label, req);
     let input;
     if (q.type === 'choice') {
       input = h('div', { class: 'opts' }, q.options.map(o => {
@@ -766,45 +821,53 @@ function openInterview(f) {
     } else {
       input = h('input', { type: 'text', placeholder: q.hint, oninput: e => { answers[q.id] = e.target.value; update(); } });
     }
+    if (q.type === 'short' || q.type === 'long') Object.assign(reqTags[reqTags.length - 1], { input, hint: input.placeholder });
     body.append(h('div', { class: 'q' }, label, input));
   }
+
+  // Reference photos and files, each with a note on what it is for.
+  const assetList = h('div', { class: 'asset-list' });
+  const drawAssets = () => {
+    assetList.innerHTML = '';
+    assets.forEach((x, i) => assetList.append(h('div', { class: 'asset-row' },
+      h('span', { class: 'fname', title: x.path }, basename(x.path)),
+      h('input', { type: 'text', value: x.note, placeholder: 'What is it for? The owner’s face, wear this shirt, hold this product, our logo…', oninput: e => { x.note = e.target.value; update(); } }),
+      h('button', { class: 'asset-x', type: 'button', title: 'Remove', onclick: () => { assets.splice(i, 1); drawAssets(); update(); } }, '×'))));
+  };
+  body.append(h('div', { class: 'q' },
+    h('label', { class: 'ql' }, 'Reference photos and files', h('span', { class: 'opt-tag' }, 'optional')),
+    h('p', { class: 'fh' }, 'Real people, real products, real places. Add a photo of the person, the shirt they should wear, the product they hold, your shop or your logo, and say what each one is for.'),
+    assetList,
+    h('div', null, h('button', { class: 'btn small', type: 'button', onclick: async () => {
+      const ps = await api.os.pickFiles();
+      ps.forEach(p => assets.some(x => x.path === p) || assets.push({ path: p, note: '' }));
+      drawAssets(); update();
+    } }, '＋ Add photos or files'))));
+  body.append(h('div', { class: 'q' },
+    h('label', { class: 'ql' }, 'Steer it', h('span', { class: 'opt-tag' }, 'optional')),
+    h('textarea', { class: 'short', placeholder: 'Anything else the agent should know. For example: film it at our real storefront, the owner is the hero, keep it family friendly, end on our phone number.', oninput: e => { steer = e.target.value; update(); } })));
   body.append(h('details', { class: 'prompt-preview' }, h('summary', null, 'See the prompt your agent gets'), preview));
+  drawBrandNote();
   update();
 
   const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = ''; };
   const launch = fast => {
-    const miss = window.SVEBrief.missing(qs, answers);
+    const miss = qs.filter(q => needed(q) && !String(answers[q.id] || '').trim());
     if (miss.length) { toast(`Please fill in: ${miss.map(m => m.label).join(', ')}`); return; }
-    const prompt = window.SVEBrief.fill(f.brief, qs, answers);
+    const prompt = buildPrompt();
     close();
     startProject({ name: f.name, engine, brand, knowledge: kn, videoModel: vm, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
   };
-  let picker, mpick;
-  const onPick = id => {
-    engine = id;
-    const next = agentPicker({ value: id, onChange: onPick }); picker.replaceWith(next); picker = next;
-    const nm = modelPicker({ engine: id }); mpick.replaceWith(nm); mpick = nm;
-  };
-  picker = agentPicker({ value: engine, onChange: onPick });
-  mpick = modelPicker({ engine });
-  let bpick;
-  const onBrand = uid => { brand = uid; const next = brandPicker({ value: uid, onChange: onBrand }); bpick.replaceWith(next); bpick = next; };
-  bpick = brandPicker({ value: brand, onChange: onBrand });
-  let kn = homeKnowledge(), kpick;
-  const onKn = uids => { kn = uids; state.homeKnowledge = uids; const next = knowledgePicker({ value: uids, onChange: onKn }); kpick.replaceWith(next); kpick = next; };
-  kpick = knowledgePicker({ value: kn, onChange: onKn });
-  let vm = homeVideoModel(), vpick;
-  const onVm = id => { vm = id; state.homeVideoModel = id; const next = videoModelPicker({ value: id, onChange: onVm }); vpick.replaceWith(next); vpick = next; };
-  vpick = videoModelPicker({ value: vm, onChange: onVm });
   const sheet = h('div', { class: 'sheet', role: 'dialog' },
     h('div', { class: 'sheet-top' },
       f.img ? h('div', { class: 'frame' }, h('img', { src: f.img, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } })) : h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
       h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,
-    h('div', { class: 'sheet-foot' }, picker, mpick, bpick, kpick, vpick, h('span', { class: 'grow' }),
-      h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
-      h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →')));
+    h('div', { class: 'sheet-foot' }, picker, mpick, vpick,
+      h('div', { class: 'foot-go' },
+        h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
+        h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →'))));
   overlay.innerHTML = '';
   overlay.append(sheet);
   overlay.classList.remove('hidden');
