@@ -23,7 +23,7 @@
     },
     {
       "step": "Then motion and voice",
-      "detail": "Each still becomes a short talking clip with Veo 3.1 or Kling. Voiceover comes from your ElevenLabs voice. Songs come from ElevenLabs Music."
+      "detail": "Each still becomes a short clip with the video model you choose: Best is Seedance 2.5 (the default), Great is Kling 4.0, Good is Veo 3.1 Fast. The agent shows the cost of each before it makes any clip. Voiceover comes from your ElevenLabs voice. Songs come from ElevenLabs Music."
     },
     {
       "step": "Cut, caption, export",
@@ -36,8 +36,8 @@
       "detail": "Characters, scenes, mascots, style changes. Keep one image per character and reuse it."
     },
     {
-      "name": "Veo 3.1 and Kling (GenMedia)",
-      "detail": "Turns each still into a 5 to 8 second clip, with lip sync when a character talks."
+      "name": "Seedance 2.5, Kling 4.0 or Veo 3.1 (GenMedia)",
+      "detail": "Turns each still into a clip. You choose: Best (Seedance 2.5, about $14 a 30-second video, lip sync and sound), Great (Kling 4.0, about $5) or Good (Veo 3.1 Fast, about $4.50, fast)."
     },
     {
       "name": "ElevenLabs Music (GenMedia)",
@@ -111,12 +111,12 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. The bobblehead [person] keeps [the action: the scooter zooms forward, hair flapping] while the camera tracks beside them. They turn to the lens and say with big energy: \"[first line of your script]\". Accurate lip sync, a gentle bobblehead wobble, upbeat comedy music, 8 seconds, vertical."
         },
         {
           "label": "Motion (no image)",
-          "tool": "Veo 3.1",
+          "tool": "Seedance 2.5",
           "text": "8-second vertical video. A [profession] with a comically huge head on a normal body stands in [setting] holding [prop] and says straight to camera: \"[one line]\". Realistic look, bright light, the head wobbles a little with each word."
         },
         {
@@ -198,12 +198,12 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. The [smug yellow tooth] talks to camera with clear mouth movement and says in a [proud, sarcastic] voice: \"[I'm not yellow. I'm vintage.]\" The [crooked tooth] rolls its eyes. Small wiggles, slow push-in, 8 seconds, vertical."
         },
         {
           "label": "Motion (no image)",
-          "tool": "Veo 3.1",
+          "tool": "Seedance 2.5",
           "text": "Vertical 9:16, 3D animated look. Close-up of [the problem: a blinking Wi-Fi router on a messy desk] with a cartoon face. It says, proud: \"[Buffering is a lifestyle.]\" Then a hand reaches for a phone, and the router panics: \"[Wait. Who are you calling?]\" Comic pauses, light quirky music."
         },
         {
@@ -290,7 +290,7 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. [Character] looks at the camera and says: \"[I'm Doug. I'm a dandelion. I own this yard now, and the neighbors are jealous.]\" Smug look, small gestures, slow push-in, 8 seconds, vertical."
         },
         {
@@ -359,12 +359,12 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. The [profession] rubs their eyes and complains to camera: \"[Because of [brand], I have so many customers I haven't had lunch since Tuesday.]\" The crowd cheers behind them. Handheld documentary feel, 8 seconds, vertical."
         },
         {
           "label": "Motion (warning card)",
-          "tool": "Veo 3.1",
+          "tool": "Seedance 2.5",
           "text": "Black screen. A bold red title \"WARNING\" slams in. White text below: \"[Side effects may include too many customers. Watch at your own risk.]\" Slow push-in, low ominous hum, 5 seconds."
         },
         {
@@ -434,12 +434,12 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. Mockumentary style, handheld camera, slow zoom on the face. The [office worker] says awkwardly into the lens: \"[He just showed it to everyone. In the meeting.]\" Long pause, then a glance at a coworker. 8 seconds."
         },
         {
           "label": "Motion (reveal)",
-          "tool": "Veo 3.1",
+          "tool": "Seedance 2.5",
           "text": "Same office. A [presenter] stands beside a whiteboard that reads \"[NOBODY WANTS TO SEE YOUR JUNK. MAKE BETTER ADS.]\" and says to camera: \"[Make it fun to watch, and people might actually buy.]\" A coworker walks past in a trench coat. 8 seconds."
         },
         {
@@ -509,12 +509,12 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Kling image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Animate this illustration. The dog barks wildly. The interpreter turns to the camera and says calmly: \"[He is saying: the mail carrier has returned, and he takes this very personally.]\" Comic timing, 8 seconds."
         },
         {
           "label": "Motion (end card)",
-          "tool": "Veo 3.1",
+          "tool": "Seedance 2.5",
           "text": "The living room is in comic chaos, cushions everywhere. The interpreter holds up [the product]. Text appears: \"[It's not him. It's training. We can help.]\" 5 seconds."
         },
         {
@@ -580,7 +580,7 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. The character looks at the camera and says in a playful voice: \"Hello, my name is [name], and I had zero [leads].\" Short pause, then holds up [a phone buzzing with notifications] and says: \"Now I had to hire my cousin.\" 8 seconds, vertical."
         },
         {
@@ -649,7 +649,7 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Kling image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Animate this image. The character dances and sings on the beat, the crowd cheers, the camera bounces gently with the rhythm, confetti at the end. 8 seconds."
         },
         {
@@ -719,7 +719,7 @@
         },
         {
           "label": "Motion (from the still)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this image as the first frame. I talk to camera with natural lip sync: \"[script line]\". Small hand gestures. The [hot dog man] slowly waves in the background. 8 seconds."
         },
         {
@@ -789,7 +789,7 @@
         },
         {
           "label": "Motion (from the sheet)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use the front view as the first frame. The spokesperson stands in front of [a home with solar panels] and says warmly to camera: \"[Here's what your neighbors found out about [offer].]\" Natural lip sync, light breeze, 8 seconds."
         },
         {
@@ -854,12 +854,12 @@
       "prompts": [
         {
           "label": "Motion (from a listing photo)",
-          "tool": "Veo 3.1 image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this listing photo as the first frame. Slow cinematic drone pull-back that reveals [the house, the pool and the hills]. Golden hour, smooth stabilized motion, no people, do not add or change any buildings or features. 8 seconds."
         },
         {
           "label": "Motion (inside)",
-          "tool": "Kling image-to-video",
+          "tool": "Seedance 2.5 image-to-video",
           "text": "Use this interior photo. Slow gimbal push-in through [the living room toward the big windows], soft daylight, realistic, keep every piece of furniture and finish exactly as shown. 6 seconds."
         },
         {

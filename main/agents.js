@@ -13,6 +13,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, execFile } = require('node:child_process');
+const videoModels = require('../renderer/data/video-models');
 
 const exe = process.platform === 'win32' ? '.cmd' : '';
 
@@ -231,7 +232,7 @@ function setupPrompt({ toolkitDir }) {
 
 function systemPrompt(ctx) {
   if (ctx.purpose === 'setup') return setupPrompt(ctx);
-  const { projectDir, toolkitDir, filmcraft, brand, voice, knowledge } = ctx;
+  const { projectDir, toolkitDir, filmcraft, brand, voice, knowledge, videoModel } = ctx;
   const lines = [
     'You are the agent inside Scale Video Editor, a desktop app where a person chats with you while a video is made.',
     `The project folder is: ${projectDir}`,
@@ -251,6 +252,7 @@ function systemPrompt(ctx) {
       ? `Brand knowledge: the person attached ${knowledge.length === 1 ? 'this document' : 'these documents'} about their business, in the project folder: ${knowledge.map(k => `${k.file} ("${k.name}")`).join(', ')}. Read ${knowledge.length === 1 ? 'it' : 'them'} before you write anything. Take the business name, offers, prices, audience, pains, results, proof, story and voice from ${knowledge.length === 1 ? 'it' : 'them'}. Do not invent a fact that is not there; if one you need is missing, ask, or write a clear [placeholder].`
       : null,
     'Sample scripts are Mad Libs. When a brief includes a sample script, keep its beats, rhythm, line lengths and the shape of each joke, and replace every <placeholder> and every example detail with the person\'s own business, customer, problem and offer (from their answers and any brand knowledge). Never keep the sample\'s example business. The words after a colon in a placeholder (<damage 1: made her breath smell like a gas station hot dog>) are examples of how specific and cheeky the line should be. Match that energy. Do not make it more polite or more generic. Show the filled-in script before you make anything.',
+    videoModels.promptLine(videoModel),
     'Rules: do not play sound out loud, do not open new windows, do not publish or upload anything, and do not run anything that costs money without asking first.',
     'Look at frames of anything you render before you call it done, and say plainly what you did not check.',
     'Keep replies short. The person sees your messages in a chat panel beside the preview.'

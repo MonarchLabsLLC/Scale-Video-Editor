@@ -40,7 +40,7 @@ protocol.registerSchemesAsPrivileged([
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 // models: { <agent id>: { model, effort } }, the model and effort chosen for each agent.
-const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, voice: '', access: 'standard', toolkitDir: '', brand: '', filmcraftApp: '', filmcraftCli: '' };
+const DEFAULT_SETTINGS = { engine: 'claude', model: '', models: {}, voice: '', access: 'standard', toolkitDir: '', brand: '', videoModel: 'best', filmcraftApp: '', filmcraftCli: '' };
 
 function readSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) }; } catch { return { ...DEFAULT_SETTINGS }; }
@@ -164,6 +164,8 @@ async function takeSnapshots() {
   await js("window.__sve.go({ view: 'viral', id: 'things-that-talk' })"); await wait(600); await shot('7b-viral-format');
   await js("document.querySelectorAll('*').forEach(e => { if (e.scrollHeight > e.clientHeight + 50) e.scrollTop = e.scrollHeight; })"); await wait(300); await shot('7c-viral-prompts');
   await js("[...document.querySelectorAll('button')].find(b => b.textContent === 'Make this video').click()"); await wait(500); await shot('7d-viral-interview');
+  await js("document.querySelector('.video-pick .mini-select')?.click()"); await wait(400); await shot('7e-video-model-menu');
+  await js("document.body.click(); document.querySelector('.sheet-close')?.click(); window.__sve.go({ view: 'settings' })"); await wait(300); await js("document.querySelector('.vm-cards')?.scrollIntoView({ block: 'center' })"); await wait(300); await shot('5c-video-model');
   await js("document.querySelector('.sheet-close') && document.querySelector('.sheet-close').click()");
   // Brand knowledge. Seeds a sample document only in a throwaway projects folder (SVE_PROJECTS_ROOT).
   if (process.env.SVE_PROJECTS_ROOT && !knowledge.list().length) {
@@ -415,7 +417,7 @@ function registerIpc() {
   ipcMain.handle('projects:get', (_e, id) => projects.get(id));
   ipcMain.handle('projects:update', (_e, id, patch) => {
     const allowed = {};
-    for (const k of ['engine', 'model', 'brand', 'voice']) if (k in patch) allowed[k] = patch[k];
+    for (const k of ['engine', 'model', 'brand', 'voice', 'videoModel']) if (k in patch) allowed[k] = patch[k];
     if (Array.isArray(patch.knowledge)) allowed.knowledge = patch.knowledge.filter(x => typeof x === 'string').slice(0, 20);
     if ('engine' in patch) allowed.session = null; // a session belongs to one agent
     return projects.update(id, allowed);
@@ -489,7 +491,8 @@ function registerIpc() {
       mcpScript: mcpScript(),
       brand: project.brand ? brands.copyInto(project.brand, project.dir) : null,
       knowledge: knowledge.copyInto(project.knowledge, project.dir),
-      voice: (voices.forPrompt(project.voice != null ? project.voice : settings.voice) || {}).line || null
+      voice: (voices.forPrompt(project.voice != null ? project.voice : settings.voice) || {}).line || null,
+      videoModel: project.videoModel || settings.videoModel
     };
     const handle = agents.runTurn(ctx, full, ev => {
       if (ev.kind === 'session' && ev.id && ev.id !== project.session) {

@@ -12,8 +12,8 @@ L.push('Text in [brackets] is a placeholder. Fill it from the owner\'s answers. 
 L.push('## The rules behind every one', '', ...d.rules.map(r => `- ${r}`), '');
 L.push('## How to make one', '', ...d.pipeline.map((p, i) => `${i + 1}. **${p.step}.** ${p.detail}`), '');
 L.push('## Tools', '', ...d.tools.map(t => `- **${t.name}:** ${t.detail}`), '');
-L.push('GenMedia endpoints: stills `google/nano-banana-2.1`; talking clips `fal-ai/veo3.1/image-to-video` (or `fal-ai/veo3.1/fast/image-to-video` for drafts); other motion `kling/v4/image-to-video`; songs `elevenlabs/music/v2.5`. Check `genmedia schema <endpoint>` for inputs and price before a run.', '');
-L.push('Before generating video clips, show the owner the script and the stills, say roughly what the clips will cost, and wait for a go-ahead. Never publish or upload the finished video.', '');
+L.push('GenMedia endpoints: stills `google/nano-banana-2.1`; video clips by tier: Best (default) `bytedance/seedance-2.5/image-to-video`, Great `kling/v4/image-to-video`, Good `fal-ai/veo3.1/fast/image-to-video`; songs `elevenlabs/music/v2.5`. Check `genmedia schema <endpoint>` for inputs and price before a run.', '');
+L.push('Before generating video clips, show the owner the script and the stills, then the Good, Great and Best video model choices with the cost of each for this video, and wait for a go-ahead. Never publish or upload the finished video.', '');
 L.push('## The formats', '', ...d.formats.map((f, i) => `${i + 1}. [${f.name}](#${f.id}): ${f.tag}`), '');
 d.formats.forEach((f, i) => {
   L.push(`<a id="${f.id}"></a>`, `## ${i + 1}. ${f.name}`, '', `*${f.tag}*`, '');

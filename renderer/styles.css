@@ -660,3 +660,23 @@ input.krename { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; widt
 .kbox { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--hair); font-size: 12px; flex: none; }
 .kbox.on { background: #3f9b5a; border-color: #3f9b5a; color: #fff; }
 .knowledge-pick > .mini-select { border: 1px solid var(--hair); }
+
+/* AI video model: Good / Great / Best */
+.vm-tier { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.vm-tier.big { min-width: 52px; text-align: center; padding: 4px 8px; }
+.vm-menu { width: 380px; max-width: calc(100vw - 32px); }
+.vm-menu .menu-item { align-items: flex-start; }
+.vm-cost { color: var(--ink); font-weight: 600; }
+.vm-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.vm-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; border: 1px solid var(--hair); border-radius: 16px; background: var(--panel); text-align: left; }
+.vm-card:hover { border-color: var(--label); }
+.vm-card.on { border-color: var(--coral); box-shadow: 0 0 0 2px var(--coral) inset; }
+.vm-card b { font-size: 17px; }
+.vm-card p { margin: 0; font-size: 13px; color: var(--label); flex: 1; }
+.vm-card .vm-cost { font-size: 13px; }
+.vm-head { display: flex; align-items: center; gap: 8px; width: 100%; }
+.vm-rec { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--coral); }
+.vm-grade { font-size: 12px; font-weight: 600; color: var(--label); }
+@media (max-width: 720px) { .vm-cards { grid-template-columns: 1fr; } }
+.sheet-foot { flex-wrap: wrap; row-gap: 8px; }
+.sheet-foot .mini-select { white-space: nowrap; }

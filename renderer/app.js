@@ -284,9 +284,13 @@ function fitMenu(menu, anchor) {
   menu.style.maxHeight = Math.max(160, down ? below : above) + 'px';
   menu.style.overflowY = 'auto';
   // Keep it inside the window on the right too (the model menu is wide with its shelf open).
+  // Inside a sheet, the sheet clips it, so keep it inside the sheet on both sides.
+  const box = anchor.closest('.sheet')?.getBoundingClientRect() || { left: 0, right: innerWidth };
   const mr = menu.getBoundingClientRect();
-  const over = mr.right - (innerWidth - 12);
+  const over = mr.right - (box.right - 12);
   if (over > 0) menu.style.left = ((parseFloat(menu.style.left) || 0) - over) + 'px';
+  const under = (box.left + 12) - menu.getBoundingClientRect().left;
+  if (under > 0) menu.style.left = ((parseFloat(menu.style.left) || 0) + under) + 'px';
 }
 
 /* ---------- model picker ---------- */
@@ -603,8 +607,8 @@ function viralBrief(f) {
     'Prompts to start from (fill the <placeholders> from my answers):',
     ...f.prompts.map(p => `- ${p.label} (${p.tool}): ${unbracket(p.text)}`),
     '',
-    'Tools: make stills with GenMedia google/nano-banana-2.1 and reuse each character image so the look stays the same. Animate with fal-ai/veo3.1/image-to-video (talking, lip sync) or kling/v4/image-to-video. Songs with elevenlabs/music/v2.5. Voiceover with my-voice. Cut, caption and export in FilmCraft. Burn in captions and end on the call to action.',
-    'Before generating video clips, show me the script and the stills, say roughly what the video clips will cost, and wait for my go-ahead.'
+    'Tools: make stills with GenMedia google/nano-banana-2.1 and reuse each character image so the look stays the same. Animate each still with the AI video model I chose (Seedance 2.5 unless I picked another). Songs with elevenlabs/music/v2.5. Voiceover with my-voice. Cut, caption and export in FilmCraft. Burn in captions and end on the call to action.',
+    'Before generating video clips, show me the script and the stills, then the Good, Great and Best video model choices with the cost of each for this video, and wait for my go-ahead.'
   ].join('\n');
 }
 
@@ -679,6 +683,50 @@ function viewViralFormat(id) {
       h('div', { class: 'vprompts' }, f.prompts.map(prompt))));
 }
 
+/* ---------- video model (Good / Great / Best) ---------- */
+const VM = window.SVE_VIDEO_MODELS;
+const homeVideoModel = () => state.homeVideoModel || state.env?.settings?.videoModel || VM.DEFAULT;
+function videoModelPicker({ value, onChange, up = true }) {
+  const wrap = h('div', { class: 'agent-pick video-pick' });
+  const cur = VM.byId(value);
+  const btn = h('button', { class: 'mini-select', type: 'button', title: 'Choose the AI video model for the clips' },
+    h('span', { class: 'vm-tier' }, cur.tier), h('span', null, cur.model), h('span', { style: { opacity: .5 } }, '▾'));
+  wrap.append(btn);
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = wrap.querySelector('.menu');
+    if (open) { open.remove(); return; }
+    const menu = h('div', { class: 'menu vm-menu' + (up ? '' : ' down') });
+    menu.append(h('div', { class: 'mi-sub', style: { padding: '6px 12px 2px' } }, 'Video clips. Prices are about, in fal.ai credits (US dollars).'));
+    for (const t of VM.tiers) {
+      menu.append(h('button', { class: 'menu-item', type: 'button', onclick: ev => { ev.stopPropagation(); menu.remove(); onChange(t.id); } },
+        h('span', { class: 'vm-tier big' }, t.tier),
+        h('span', null,
+          h('div', { class: 'mi-name' }, `${t.model}${t.id === VM.DEFAULT ? ' · recommended' : ''}`),
+          h('div', { class: 'mi-sub' }, t.note),
+          h('div', { class: 'mi-sub vm-cost' }, `About ${t.perClip} a clip · about ${t.perVideo} a ${VM.CLIP_SECONDS}-second video`)),
+        cur.id === t.id ? h('span', { class: 'mi-check' }, '✓') : null));
+    }
+    menu.append(h('div', { class: 'menu-sep' }), h('div', { class: 'mi-sub', style: { padding: '4px 12px 8px' } }, 'The agent shows the cost for your video and waits for your go-ahead before it makes any clip.'));
+    wrap.append(menu);
+    fitMenu(menu, btn);
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  });
+  return wrap;
+}
+function videoModelSection(s, set) {
+  return [
+    h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'AI video model')),
+    h('div', { class: 'field' },
+      h('div', { class: 'vm-cards' }, VM.tiers.map(t => h('button', { class: 'vm-card' + (VM.byId(s.videoModel).id === t.id ? ' on' : ''), type: 'button', onclick: () => set({ videoModel: t.id }) },
+        h('div', { class: 'vm-head' }, h('span', { class: 'vm-tier' }, t.tier), t.id === VM.DEFAULT ? h('span', { class: 'vm-rec' }, 'Recommended') : null),
+        h('b', null, t.model), h('span', { class: 'vm-grade' }, t.grade), h('p', null, t.note),
+        h('span', { class: 'vm-cost' }, `About ${t.perClip} a ${t.clip}-second clip`), h('span', { class: 'vm-cost' }, `About ${t.perVideo} a ${VM.CLIP_SECONDS}-second video`)))),
+      h('div', { class: 'fh' }, 'The default for new videos. You can change it for each video when you start it. Before the agent makes any clip, it shows you all three choices with the cost for that video and waits for your go-ahead. Prices are about, from fal.ai, paid in fal.ai credits (US dollars).'))
+  ];
+}
+
 /* ---------- interview ---------- */
 function openInterview(f) {
   const qs = window.SVEBrief.parse(f.brief);
@@ -729,7 +777,7 @@ function openInterview(f) {
     if (miss.length) { toast(`Please fill in: ${miss.map(m => m.label).join(', ')}`); return; }
     const prompt = window.SVEBrief.fill(f.brief, qs, answers);
     close();
-    startProject({ name: f.name, engine, brand, knowledge: kn, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
+    startProject({ name: f.name, engine, brand, knowledge: kn, videoModel: vm, format: f.id, prompt: fast ? prompt + '\n\nWhere I left a choice open, choose for me and say what you chose.' : prompt });
   };
   let picker, mpick;
   const onPick = id => {
@@ -745,13 +793,16 @@ function openInterview(f) {
   let kn = homeKnowledge(), kpick;
   const onKn = uids => { kn = uids; state.homeKnowledge = uids; const next = knowledgePicker({ value: uids, onChange: onKn }); kpick.replaceWith(next); kpick = next; };
   kpick = knowledgePicker({ value: kn, onChange: onKn });
+  let vm = homeVideoModel(), vpick;
+  const onVm = id => { vm = id; state.homeVideoModel = id; const next = videoModelPicker({ value: id, onChange: onVm }); vpick.replaceWith(next); vpick = next; };
+  vpick = videoModelPicker({ value: vm, onChange: onVm });
   const sheet = h('div', { class: 'sheet', role: 'dialog' },
     h('div', { class: 'sheet-top' },
       f.img ? h('div', { class: 'frame' }, h('img', { src: f.img, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } })) : h('div', { class: 'frame', style: toneStyle(toneFor(f)), html: window.SVE_ART(f.art) }),
       h('div', null, h('p', { class: 'eyebrow' }, f.shape), h('h2', null, f.name), h('p', null, f.blurb)),
       h('button', { class: 'sheet-close', onclick: close, title: 'Close' }, '×')),
     body,
-    h('div', { class: 'sheet-foot' }, picker, mpick, bpick, kpick, h('span', { class: 'grow' }),
+    h('div', { class: 'sheet-foot' }, picker, mpick, bpick, kpick, vpick, h('span', { class: 'grow' }),
       h('button', { class: 'btn', title: 'Use defaults for every open choice', onclick: () => launch(true) }, 'Fast prompt'),
       h('button', { class: 'btn primary', onclick: () => launch(false) }, 'Go →')));
   overlay.innerHTML = '';
@@ -769,9 +820,9 @@ async function newBlankProject() {
   go({ view: 'project', id: p.id });
 }
 
-async function startProject({ name, engine, format, brand, knowledge, prompt, attachments }) {
+async function startProject({ name, engine, format, brand, knowledge, videoModel, prompt, attachments }) {
   if (!agentInfo(engine).installed) { go({ view: 'settings' }); toast(`${agentInfo(engine).name} is not installed yet.`); return; }
-  const p = await api.projects.create({ name, engine, format, brand: brand || null, knowledge: knowledge || [] });
+  const p = await api.projects.create({ name, engine, format, brand: brand || null, knowledge: knowledge || [], videoModel: videoModel || homeVideoModel() });
   await refreshProjects();
   go({ view: 'project', id: p.id });
   await sendTurn(p.id, prompt, attachments || []);
@@ -1086,6 +1137,7 @@ function viewSettings() {
     h('p', { class: 'lede' }, 'The editor has no account and no AI of its own. It runs the coding agent you already use. Click Connect, sign in on the agent’s own page, and it uses your own subscription.'),
     updateSection(),
     voicesSection(),
+    ...videoModelSection(s, set),
     h('div', { class: 'section-head' }, h('h2', { class: 'section' }, 'Agents')),
     h('div', { class: 'agent-rows' }, env.agents.map(a => agentRow(a, s, set))),
     h('div', { style: { marginTop: '10px' } }, h('button', { class: 'btn small ghost', onclick: async () => { await refreshEnv(); render(); toast('Checked again.'); } }, 'Check again')),
