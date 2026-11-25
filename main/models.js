@@ -11,6 +11,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
+const winspawn = require('./winspawn');
 
 const EFFORT_ORDER = ['', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const sortEfforts = list => [...new Set(list)].sort((a, b) => EFFORT_ORDER.indexOf(a) - EFFORT_ORDER.indexOf(b));
@@ -30,7 +31,8 @@ function save() {
 
 function run(file, args, env, timeout = 20000) {
   return new Promise(resolve => {
-    execFile(file, args, { timeout, env, maxBuffer: 16 * 1024 * 1024, shell: process.platform === 'win32', windowsHide: true },
+    const r = winspawn.prepare(file, args);
+    execFile(r.file, r.args, { timeout, env, maxBuffer: 16 * 1024 * 1024, windowsHide: true, ...r.options },
       (err, stdout) => resolve(err && !stdout ? '' : String(stdout || '')));
   });
 }
