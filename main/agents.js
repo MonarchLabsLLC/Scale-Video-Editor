@@ -13,6 +13,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, execFile } = require('node:child_process');
+const winspawn = require('./winspawn');
 const videoModels = require('../renderer/data/video-models');
 
 const exe = process.platform === 'win32' ? '.cmd' : '';
@@ -128,7 +129,8 @@ function which(bin) {
 
 function versionOf(file) {
   return new Promise(resolve => {
-    execFile(file, ['--version'], { timeout: 10000, shell: process.platform === 'win32' }, (err, stdout) => {
+    const run = winspawn.prepare(file, ['--version']);
+    execFile(run.file, run.args, { timeout: 10000, windowsHide: true, ...run.options }, (err, stdout) => {
       const m = String(stdout || '').match(/(\d+\.\d+\.\d+)/);
       resolve(err ? null : (m ? m[1] : String(stdout).trim().slice(0, 40)));
     });
@@ -139,7 +141,8 @@ function versionOf(file) {
 function authOf(e, file) {
   if (!e.status) return Promise.resolve(null);
   return new Promise(resolve => {
-    execFile(file, e.status.args, { timeout: 15000, env: agentEnv(), shell: process.platform === 'win32' }, (err, stdout, stderr) => {
+    const run = winspawn.prepare(file, e.status.args);
+    execFile(run.file, run.args, { timeout: 15000, env: agentEnv(), windowsHide: true, ...run.options }, (err, stdout, stderr) => {
       const out = `${stdout || ''}\n${stderr || ''}`.trim();
       try { resolve(e.status.parse(out)); } catch { resolve(null); }
     });
@@ -169,7 +172,8 @@ function login(id, { openExternal, onLine } = {}) {
   if (!file) return Promise.reject(new Error(`${e.name} is not installed.`));
   if (e.login.terminal) return openTerminal(e.login.terminal.replace(/^\S+/, file)).then(() => ({ terminal: true }));
   return new Promise(resolve => {
-    const child = spawn(file, e.login.args, { env: agentEnv(), shell: process.platform === 'win32', windowsHide: true });
+    const run = winspawn.prepare(file, e.login.args);
+    const child = spawn(run.file, run.args, { env: agentEnv(), windowsHide: true, ...run.options });
     let opened = false, all = '';
     const feed = chunk => {
       const text = chunk.toString('utf8');
@@ -477,7 +481,8 @@ function runTurn(ctx, prompt, onEvent) {
     if (runner.prompt === 'flag') args.push(runner.flag, full); else args.push(full);
   }
   const env = agentEnv();
-  const child = spawn(file, args, { cwd: ctx.projectDir, env, shell: process.platform === 'win32', windowsHide: true });
+  const run = winspawn.prepare(file, args);
+  const child = spawn(run.file, run.args, { cwd: ctx.projectDir, env, windowsHide: true, ...run.options });
   let buf = '';
   let finished = false;
   let stderr = '';
